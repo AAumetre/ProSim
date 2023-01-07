@@ -1,4 +1,3 @@
-from typing import *
 from Others import *
 from Resource import Resource
 
@@ -17,12 +16,10 @@ class Action:
     def __repr__(self):
         return self.name_
 
-    def execute(self) -> Tuple[bool, Cost]:
+    def compute_cost(self) -> Cost:
         # at this point, the kernel made sure that:
         # all the inputs and all the resources are available
         for risk in self.events_.risks_:
-            if risk.is_real():
-                risk.recover()
-                return False, risk.get_lost_cost()  # only one risk
+            pass
         logging.debug(f"Action {self.name_} has been executed.")
-        return True, self.events_.nominal_
+        return self.events_.nominal_

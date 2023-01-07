@@ -1,63 +1,95 @@
 import collections
 import logging
+
 from Action import Action
 from Others import *
 from collections import defaultdict
 from Resource import Resource
+from Scheduler import Scheduler
 
 
 class Kernel:
 
-    def __init__(self):
+    def __init__(self, scheduler_: Scheduler):
         self.actions_: Dict[str, Action] = {}
         self.items_in_stock_: Dict[str, int] = defaultdict(int)
         self.cookbook: Dict[str, Action] = {}  # Item.type_, Action
         self.items_queue_ = collections.deque()  # (Item, count)
-        self.actions_queue_ = collections.deque()  # Action.name_
+        self.actions_queue_ = collections.deque()  # Action.name_ TODO get rid of this name?
         self.available_resources_: Dict[str, int] = defaultdict(int)
         self.existing_resources: Set[str] = set()
         self.total_cost = Cost(0.0, 0.0)
+        self.scheduler_ = scheduler_
 
     def __repr__(self):
-        return f"KERNEL. Stock:{str(self.items_in_stock_)} Actions:{str(self.items_queue_)} Time: {self.total_cost.duration_}"
+        return f"KERNEL. Stock:{str(self.items_in_stock_)} Actions:{str(self.items_queue_)} " \
+               f"Time: {self.total_cost.duration_}"
 
     def run(self) -> bool:
         """ Runs for as long as possible. Returns true is there is nothing left to do. """
         can_run = True
-        while (len(self.actions_queue_) > 0 or len(self.items_queue_) > 0) and can_run:
-            could_run_action = self.run_actions()
-            self.run_item()
-            can_run = could_run_action or (self.actions_queue_[-2] != self.actions_queue_[-1])  # TODO: fishy
+        while can_run:
+            at_least_one_change = self.try_scheduling_actions()
+            at_least_one_change |= self.run_item()
+            can_run = self.scheduler_.has_events() or at_least_one_change
+            if not at_least_one_change:  # we cannot enqueue more event, run
+                self.scheduler_.run_to_next()
+        # check whether everything is done
         if len(self.actions_queue_) > 0 or len(self.items_queue_) > 0:
             return False
         return True
 
-    def run_actions(self) -> bool:
+    def try_scheduling_actions(self) -> bool:
         """ Run all posted actions, until one cannot be done. """
+        at_least_one_scheduled = False
         while len(self.actions_queue_) > 0:
             next_action = self.actions_[self.actions_queue_[-1]]
             # check if all pre-requisites are met
             if self.action_can_execute(next_action):
-                _, cost = next_action.execute()
-                self.total_cost += cost
+                self.schedule_action(next_action)
+                # remove the action from the queue
                 self.actions_queue_.pop()
-                # update stocks
-                for item in next_action.inputs_:
-                    self.items_in_stock_[item.type_] -= item.qty_
-                for item in next_action.outputs_:
-                    self.items_in_stock_[item.type_] += item.qty_
+                at_least_one_scheduled = True
             else:
-                return False
-        return True
+                return at_least_one_scheduled
+        return False
+
+    def schedule_action(self, action_: Action):
+        # update cost
+        cost = action_.compute_cost()
+        self.total_cost += cost
+        # schedule end of action
+        self.scheduler_.schedule(action_, cost.duration_)
+        # make resources unavailable
+        for res in action_.resources_:
+            self.available_resources_[res.type_] -= res.qty_
+        # update stocks
+        for item in action_.inputs_:
+            self.items_in_stock_[item.type_] -= item.qty_
 
     def run_item(self) -> bool:
         """ At run-time, look for items that need to be produced. """
+        if len(self.items_queue_) == 0:
+            return False
         item_needed, count = self.items_queue_[-1]
         if self.items_in_stock_[item_needed] < count:
             # find out how to make what's missing
-            self.actions_queue_.append(self.get_recipe(item_needed).name_)
             # TODO: we could add all the needed items, not do it one-by-one and enqueue enough actions to pass
-            return False
+            needed_action = self.get_recipe(item_needed)
+            if self.action_can_execute(needed_action):
+                self.schedule_action(needed_action)
+                # decrease the number of needed items
+                items_produced = 0
+                # TODO: to be improved, change outputs to being a dict?
+                for it in needed_action.outputs_:
+                    if it.type_ == item_needed:
+                        items_produced = it.qty_
+                self.items_queue_[-1] = (item_needed, count-items_produced)
+                return True
+            else:
+                # Action was needed but could not be scheduled
+                self.actions_queue_.append(needed_action.name_)
+                return False
         else:
             self.items_queue_.pop()
             return True

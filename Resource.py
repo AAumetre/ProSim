@@ -1,4 +1,3 @@
-from Others import *
 
 
 class Resource:
@@ -7,5 +6,3 @@ class Resource:
         self.type_ = type_
         self.qty_ = qty_
         self.busy_ = False
-
-
