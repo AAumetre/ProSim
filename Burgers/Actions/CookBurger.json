@@ -1,0 +1,25 @@
+{
+  "name": "Cook burgers",
+  "inputs": [
+    {"type":  "RawBurger", "qty":  4, "unit":  "cardinal"},
+    {"type":  "Oil", "qty":  1, "unit":  "cL"},
+    {"type":  "Spices", "qty":  1, "unit":  "g"}
+  ],
+  "outputs": [
+    {"type":  "CookedBurger", "qty":  4, "unit":  "cardinal"}
+  ],
+  "resources": [
+    {"type": "Cook", "qty":  1},
+    {"type": "Grill", "qty": 1}
+  ],
+  "events": {
+    "nominal": {"duration": 0.05, "cost":  0.0},
+    "risks": [
+      { "name": "burgers burn",
+        "action":  "Clean up grill",
+        "probability":  "cook_burns_burgers",
+        "lost_cost": {"duration":  "1.1*d", "cost":  "c"}
+      }
+    ]
+  }
+}

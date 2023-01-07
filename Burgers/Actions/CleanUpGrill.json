@@ -1,0 +1,15 @@
+{
+  "name": "Clean up grill",
+  "inputs": [
+    {"type":  "CleaningAgent", "qty":  1, "unit":  "cL"}
+  ],
+  "outputs": [],
+  "resources": [
+    {"type": "Cook", "qty":  1},
+    {"type": "Grill", "qty": 1}
+  ],
+  "events": {
+    "nominal": {"duration": {"value": 0.1, "unit":  "hour"}, "cost":  0.0},
+    "risks": []
+  }
+}
