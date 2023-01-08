@@ -1,10 +1,8 @@
 import glob
 
-from Action import Action
 from Kernel import Kernel
-from Factory import Factory
+from Factory import JsonFactory
 from Others import *
-from Resource import Resource
 from Scheduler import Scheduler
 
 
@@ -18,7 +16,7 @@ def main():
     scheduler = Scheduler()
     kernel = Kernel(scheduler)
     scheduler.kernel_ = kernel
-    factory = Factory()
+    factory = JsonFactory()
 
     action_paths = glob.glob("./Burgers/Actions/*.json")
     for ap in action_paths:
@@ -29,17 +27,23 @@ def main():
     kernel.add_to_stock(ItemCount("RawBurger", inf, "cardinal"))
     kernel.add_to_stock(ItemCount("Oil", inf, "cL"))
     kernel.add_to_stock(ItemCount("Spices", inf, "g"))
-    kernel.add_to_stock(ItemCount("Buns", inf, "g"))
+    kernel.add_to_stock(ItemCount("Buns", inf, "cardinal"))
     kernel.add_to_stock(ItemCount("Sauce", inf, "g"))
-    kernel.add_to_stock(ItemCount("CleanTomato", inf, "g"))
-    kernel.add_to_stock(ItemCount("SaladLeave", inf, "g"))
+    kernel.add_to_stock(ItemCount("CleanTomato", inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("SaladLeave", inf, "cardinal"))
 
-    kernel.add_resource(Resource("Cook", 3))
+    kernel.add_resource(Resource("Cook", 2))
     kernel.add_resource(Resource("Grill", 2))
     kernel.add_resource(Resource("KitchenBench", 2))
 
-    kernel.add_item_for_later(ItemCount("FinishedHamburger", 1, ""))
+    kernel.produce_item(ItemCount("FinishedHamburger", 64, ""))
+    kernel.set_stochastic_mode(False)
+    # TODO: issues when turning stochastic mode ON, process cannot end sometimes
+
     success = kernel.run()
+    for it, cnt in kernel.items_in_stock_.items():
+        if cnt != float("inf"):
+            print(it, cnt)
     logging.info(f"Simulation is over!\n{success=} "
                  f"Cost {kernel.total_cost.duration_:.2f} h "
                  f"Duration {scheduler.time_:.2f} h.")

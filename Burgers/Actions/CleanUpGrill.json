@@ -9,7 +9,7 @@
     {"type": "Grill", "qty": 1}
   ],
   "events": {
-    "nominal": {"duration": {"value": 0.1, "unit":  "hour"}, "cost":  0.0},
+    "nominal": {"duration": 0.1, "cost":  0.0},
     "risks": []
   }
 }

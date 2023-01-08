@@ -3,10 +3,9 @@ import json
 from Action import Action
 from Others import *
 from typing import *
-from Resource import Resource
 
 
-class Factory:
+class JsonFactory:  # TODO: we can define other formats later
 
     def create_action_from_json(self, path_: str):
         """ Create an Action from a JSON file. """
@@ -32,4 +31,9 @@ class Factory:
         return Resource(d_["type"], d_["qty"])
 
     def read_events(self, d_: Dict) -> Events:
-        return Events(Cost(d_["nominal"]["duration"], d_["nominal"]["cost"]), [])
+        nominal = Cost(d_["nominal"]["duration"], d_["nominal"]["cost"])
+        risks = []
+        for r in d_["risks"]:
+            risks.append(Risk(r["name"], r["actions"], r["probability"],
+                              Cost(r["lost_cost"]["duration"], r["lost_cost"]["cost"])))
+        return Events(nominal, risks)

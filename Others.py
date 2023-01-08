@@ -23,15 +23,18 @@ class Cost:
 @dataclass()
 class Risk:
     name_: str
-    action_: str
-    probability: Callable
-    lost_cost_: str
-
-    def get_lost_cost(self, nominal_cost_: Cost) -> Cost:
-        return Cost(0.0, 0.0)  # TODO: use defined cost function
+    recovering_actions_: List[str]  # actions names to be called to recover from the failure
+    probability: str  # probability function as evaluable expression
+    lost_cost_: Cost
 
 
 @dataclass()
 class Events:
     nominal_: Cost
     risks_: List[Risk]
+
+
+@dataclass()
+class Resource:
+    type_: str
+    qty_: int

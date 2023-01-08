@@ -20,17 +20,15 @@ class Scheduler:
         self.events_.put((self.time_+duration_, self.action_counter_, action_))
         self.action_counter_ += 1
 
-    def run_all(self):
+    def run_all(self) -> bool:
         """ Finds the next action to run and runs it. Increments time."""
+        if not self.has_events():
+            return False
         while self.has_events():
             new_time, _, finished_action = self.events_.get_nowait()
             self.time_ = new_time
-            # make Action's resources available again
-            for res in finished_action.resources_:
-                self.kernel_.available_resources_[res.type_] += res.qty_
-            # make Action's outputs available
-            for item in finished_action.outputs_:
-                self.kernel_.items_in_stock_[item.type_] += item.qty_
+            self.kernel_.finish_action(finished_action)
+        return True
 
     def has_events(self) -> bool:
         """ Tells whether there are events scheduled in the future. """

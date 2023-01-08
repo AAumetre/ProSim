@@ -16,8 +16,13 @@
     "nominal": {"duration": 0.05, "cost":  0.0},
     "risks": [
       { "name": "burgers burn",
-        "action":  "Clean up grill",
-        "probability":  "cook_burns_burgers",
+        "actions":  ["Clean up grill"],
+        "probability":  "0.1",
+        "lost_cost": {"duration":  "1.1*d", "cost":  "c"}
+      },
+      { "name": "burgers too salted",
+        "actions":  [],
+        "probability":  "0.3",
         "lost_cost": {"duration":  "1.1*d", "cost":  "c"}
       }
     ]
