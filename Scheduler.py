@@ -7,9 +7,10 @@ class Scheduler:
 
     def __init__(self):
         self.time_: float = 0.0
-        self.events_ = queue.PriorityQueue()  # time, Action
+        self.events_ = queue.PriorityQueue()  # time, order, Action
         self.kernel_ = None
-        self.action_counter_: int = 0
+        self.action_counter_: int = 0  # first scheduled, first executed
+        # TODO: we could define an Action comparison method st. we can compare on priorities
 
     def __repr__(self):
         return f"{self.time_=}   {self.events_.qsize()} events in queue"
@@ -19,9 +20,9 @@ class Scheduler:
         self.events_.put((self.time_+duration_, self.action_counter_, action_))
         self.action_counter_ += 1
 
-    def run_to_next(self):
+    def run_all(self):
         """ Finds the next action to run and runs it. Increments time."""
-        if self.has_events():
+        while self.has_events():
             new_time, _, finished_action = self.events_.get_nowait()
             self.time_ = new_time
             # make Action's resources available again

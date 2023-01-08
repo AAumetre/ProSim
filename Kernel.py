@@ -34,7 +34,7 @@ class Kernel:
                 at_least_one_change = self.try_scheduling_actions()
                 at_least_one_change |= self.try_producing_items()
             can_run = self.scheduler_.has_events() or at_least_one_change
-            self.scheduler_.run_to_next()
+            self.scheduler_.run_all()
         # check whether everything is done
         if len(self.actions_queue_) > 0 or len(self.items_queue_) > 0:
             # TODO: report why, what was missing? Currently not really working

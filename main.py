@@ -34,11 +34,11 @@ def main():
     kernel.add_to_stock(ItemCount("CleanTomato", inf, "g"))
     kernel.add_to_stock(ItemCount("SaladLeave", inf, "g"))
 
-    kernel.add_resource(Resource("Cook", 4))
-    kernel.add_resource(Resource("Grill", 4))
-    kernel.add_resource(Resource("KitchenBench", 4))
+    kernel.add_resource(Resource("Cook", 3))
+    kernel.add_resource(Resource("Grill", 2))
+    kernel.add_resource(Resource("KitchenBench", 2))
 
-    kernel.add_item_for_later(ItemCount("FinishedHamburger", 32, ""))
+    kernel.add_item_for_later(ItemCount("FinishedHamburger", 1, ""))
     success = kernel.run()
     logging.info(f"Simulation is over!\n{success=} "
                  f"Cost {kernel.total_cost.duration_:.2f} h "
