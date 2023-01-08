@@ -1,0 +1,17 @@
+{
+  "name": "Cut a tomato",
+  "inputs": [
+    {"type":  "CleanTomato", "qty":  1, "unit":  "cardinal"}
+  ],
+  "outputs": [
+    {"type":  "TomatoSlice", "qty":  8, "unit":  "cardinal"}
+  ],
+  "resources": [
+    {"type": "Cook", "qty":  1},
+    {"type": "KitchenBench", "qty": 1}
+  ],
+  "events": {
+    "nominal": {"duration": 0.01, "cost":  0.0},
+    "risks": []
+  }
+}

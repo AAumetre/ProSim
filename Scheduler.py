@@ -9,18 +9,20 @@ class Scheduler:
         self.time_: float = 0.0
         self.events_ = queue.PriorityQueue()  # time, Action
         self.kernel_ = None
+        self.action_counter_: int = 0
 
     def __repr__(self):
         return f"{self.time_=}   {self.events_.qsize()} events in queue"
 
     def schedule(self, action_: Action, duration_: float):
         """ Enqueue work in the future. """
-        self.events_.put((self.time_+duration_, action_))
+        self.events_.put((self.time_+duration_, self.action_counter_, action_))
+        self.action_counter_ += 1
 
     def run_to_next(self):
         """ Finds the next action to run and runs it. Increments time."""
         if self.has_events():
-            new_time, finished_action = self.events_.get_nowait()
+            new_time, _, finished_action = self.events_.get_nowait()
             self.time_ = new_time
             # make Action's resources available again
             for res in finished_action.resources_:

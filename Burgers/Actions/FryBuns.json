@@ -1,0 +1,18 @@
+{
+  "name": "Fry some buns",
+  "inputs": [
+    {"type":  "Buns", "qty":  4, "unit":  "cardinal"},
+    {"type":  "Oil", "qty":  1, "unit":  "cL"}
+  ],
+  "outputs": [
+    {"type":  "FriedBun", "qty":  4, "unit":  "cardinal"}
+  ],
+  "resources": [
+    {"type": "Cook", "qty":  1},
+    {"type": "Grill", "qty": 1}
+  ],
+  "events": {
+    "nominal": {"duration": 0.1, "cost":  0.0},
+    "risks": []
+  }
+}

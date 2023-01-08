@@ -1,0 +1,21 @@
+{
+  "name": "Assemble hamburger",
+  "inputs": [
+    {"type":  "CookedBurger", "qty":  1, "unit":  "cardinal"},
+    {"type":  "SaladLeave", "qty":  2, "unit":  "cardinal"},
+    {"type":  "TomatoSlice", "qty":  2, "unit":  "cardinal"},
+    {"type":  "Sauce", "qty":  1, "unit":  "cL"},
+    {"type":  "FriedBun", "qty":  1, "unit":  "cardinal"}
+  ],
+  "outputs": [
+    {"type":  "FinishedHamburger", "qty":  1, "unit":  "cardinal"}
+  ],
+  "resources": [
+    {"type": "Cook", "qty":  1},
+    {"type": "KitchenBench", "qty": 1}
+  ],
+  "events": {
+    "nominal": {"duration": 0.05, "cost":  0.0},
+    "risks": []
+  }
+}
