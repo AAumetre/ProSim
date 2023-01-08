@@ -20,15 +20,15 @@ class JsonFactory:  # TODO: we can define other formats later
         for e in d_["outputs"]:
             outputs.append(self.read_itemcount(e))
         for e in d_["resources"]:
-            resources.append(self.read_resource(e))
+            resources.append(self.read_requested_resource(e))
         events = self.read_events(d_["events"])
         return Action(d_["name"], inputs, outputs, resources, events)
 
+    def read_requested_resource(self, d_: Dict) -> RequestedResource:
+        return RequestedResource(d_["type"], d_["qty"])
+
     def read_itemcount(self, d_: Dict) -> ItemCount:
         return ItemCount(d_["type"], d_["qty"], d_["unit"])
-
-    def read_resource(self, d_: Dict) -> Resource:
-        return Resource(d_["type"], d_["qty"])
 
     def read_events(self, d_: Dict) -> Events:
         nominal = Cost(d_["nominal"]["duration"], d_["nominal"]["cost"])
@@ -37,3 +37,11 @@ class JsonFactory:  # TODO: we can define other formats later
             risks.append(Risk(r["name"], r["actions"], r["probability"],
                               Cost(r["lost_cost"]["duration"], r["lost_cost"]["cost"])))
         return Events(nominal, risks)
+
+    def create_resource_from_json(self, path_: str) -> Resource:
+        with open(path_, "r") as f:
+            json_data = json.load(f)
+            return self.read_resource(json_data)
+
+    def read_resource(self, d_: Dict) -> Resource:
+        return Resource(d_["type"], d_["quantity"], d_["properties"], d_["anonymous"] == "True")

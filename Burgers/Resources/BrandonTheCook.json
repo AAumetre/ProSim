@@ -1,0 +1,9 @@
+{
+  "type": "Cook",
+  "quantity": 1,
+  "properties": {
+    "name": "Brandon",
+    "experience": 1.2
+  },
+  "anonymous": "False"
+}

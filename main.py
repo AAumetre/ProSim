@@ -32,9 +32,12 @@ def main():
     kernel.add_to_stock(ItemCount("CleanTomato", inf, "cardinal"))
     kernel.add_to_stock(ItemCount("SaladLeave", inf, "cardinal"))
 
-    kernel.add_resource(Resource("Cook", 2))
-    kernel.add_resource(Resource("Grill", 2))
-    kernel.add_resource(Resource("KitchenBench", 2))
+    resource_paths = glob.glob("./Burgers/Resources/*.json")
+    for ap in resource_paths:
+        resource = factory.create_resource_from_json(ap)
+        kernel.add_resource(resource)
+    kernel.add_resource(Resource("Grill", 2, {}))
+    kernel.add_resource(Resource("KitchenBench", 2, {}))
 
     kernel.produce_item(ItemCount("FinishedHamburger", 64, ""))
     kernel.set_stochastic_mode(False)

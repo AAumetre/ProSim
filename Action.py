@@ -5,11 +5,12 @@ from numpy import random
 class Action:
 
     def __init__(self, name_: str, inputs_: List[ItemCount], outputs: List[ItemCount],
-                 resources_: List[Resource], events_: Events):
+                 resources_: List[RequestedResource], events_: Events):
         self.name_: str = name_
         self.inputs_: List[ItemCount] = inputs_
         self.outputs_: List[ItemCount] = outputs
-        self.resources_: List[Resource] = resources_
+        self.req_resources_: List[RequestedResource] = resources_
+        self.allocated_resources: Dict[str, List[Resource | int | float]] = {}
         self.events_ = events_
         self.stochastic_mode_: bool = False
         self.success_: bool = True
@@ -52,3 +53,13 @@ class Action:
             if out.type_ == type_:
                 return out.qty_
         return 0
+
+    def allocate_resource(self, type_: str, resource_: Resource):
+        if type_ not in self.allocated_resources:
+            self.allocated_resources[type_] = []
+        self.allocated_resources[type_].append(resource_)
+
+    def allocate_req_resource(self, type_: str, resource_: RequestedResource):
+        if type_ not in self.allocated_resources:
+            self.allocated_resources[type_] = [Resource(resource_.type_, 0, {})]
+        self.allocated_resources[type_][0].qty_ += resource_.qty_

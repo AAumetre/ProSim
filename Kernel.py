@@ -9,12 +9,17 @@ from Scheduler import Scheduler
 
 class Kernel:
 
+    # TODO: resources management is a mess. There are two classes with two different behaviours and storage. Plus, we
+    #       are now seeing the effects of not creating Actions when we need one. The objects' definitions are used
+    #       throughout the code but we never create instances. This results in actually having a single "CookBurger"
+    #       Action, which is then attributed more resources than a single run requires.
+
     def __init__(self, scheduler_: Scheduler):
         self.actions_: Dict[str, Action] = {}
         self.cookbook_: Dict[str, Action] = {}  # Item.type_, Action
         self.expected_items_: Dict[str, int] = defaultdict(int)  # Item.type_, count
         self.items_in_stock_: Dict[str, int] = defaultdict(int)
-        self.available_resources_: Dict[str, int] = defaultdict(int)
+        self.available_resources_: Dict[str, List[Resource | int | float]] = {}
         self.items_to_make_: List[ItemCount] = []
         self.actions_to_schedule_: List[Action] = []
         self.existing_resources: Set[str] = set()
@@ -65,8 +70,14 @@ class Kernel:
         # schedule end of action
         self.scheduler_.schedule(action_, cost.duration_)
         # make resources unavailable
-        for res in action_.resources_:
-            self.available_resources_[res.type_] -= res.qty_
+        for res in action_.req_resources_:
+            if self.available_resources_[res.type_][0].anonymous_:
+                self.available_resources_[res.type_][0].qty_ -= res.qty_
+                action_.allocate_req_resource(res.type_, res)
+            else:
+                for _ in range(res.qty_):  # non-anonymous resources are expected to be discrete
+                    # take resources out of kernel and allocate them to Action
+                    action_.allocate_resource(res.type_, self.available_resources_[res.type_].pop())
         # update stocks
         for item in action_.inputs_:
             self.items_in_stock_[item.type_] -= item.qty_
@@ -132,8 +143,14 @@ class Kernel:
 
     def finish_action(self, action_: Action):
         # make Action's resources available again
-        for res in action_.resources_:
-            self.available_resources_[res.type_] += res.qty_
+        for res_type, res_list in action_.allocated_resources.items():
+            if res_list[0].anonymous_:
+                self.available_resources_[res_type][0].qty_ += action_.allocated_resources[res_type][0].qty_
+                action_.allocated_resources[res_type][0].qty_ = 0
+            else:  # non-anonymous resource
+                for _ in range(len(action_.allocated_resources[res_type])):
+                    self.available_resources_[res_type].append(
+                        action_.allocated_resources[res_type].pop())
         # make Action's outputs available
         if action_.success_:
             for item in action_.outputs_:
@@ -166,7 +183,7 @@ class Kernel:
                 else:
                     self.cookbook_[item.type_] = action_
             # update known resources
-            for res in action_.resources_:
+            for res in action_.req_resources_:
                 self.existing_resources.add(res.type_)
 
     def action_can_execute(self, action_: Action) -> Tuple[bool, List[ItemCount]]:
@@ -180,10 +197,21 @@ class Kernel:
                 logging.debug(f"Item {item.type_} not in sufficient quantity.")
                 needed_items.append(item)
                 can_execute = False
-        for res in action_.resources_:
-            if self.available_resources_[res.type_] < res.qty_:
+        for res in action_.req_resources_:
+            if self.available_resources_[res.type_] == []:
                 logging.debug(f"Resource {res.type_} is currently not available.")
                 can_execute = False
+                break
+            if self.available_resources_[res.type_][0].anonymous_:
+                if self.available_resources_[res.type_][0].qty_ < res.qty_:
+                    logging.debug(f"Resource {res.type_} is currently not available.")
+                    can_execute = False
+                    break
+            else:
+                if len(self.available_resources_[res.type_]) < res.qty_:
+                    logging.debug(f"Resource {res.type_} is currently not available.")
+                    can_execute = False
+                    break
         return can_execute, needed_items
 
     def produce_item(self, item_: ItemCount) -> None:
@@ -199,7 +227,15 @@ class Kernel:
 
     def add_resource(self, res_: Resource) -> None:
         """ Give a new resource to the Kernel. """
-        self.available_resources_[res_.type_] += res_.qty_
+        if res_.type_ not in self.available_resources_:
+            if res_.anonymous_:
+                self.available_resources_[res_.type_] = [Resource(res_.type_, 0, res_.properties_)]
+            else:
+                self.available_resources_[res_.type_] = []
+        if res_.anonymous_:
+            self.available_resources_[res_.type_][0] += res_
+        else:
+            self.available_resources_[res_.type_].append(res_)
         self.existing_resources.add(res_.type_)
 
     def set_stochastic_mode(self, enabled_: bool) -> None:
