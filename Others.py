@@ -34,20 +34,7 @@ class Events:
     risks_: List[Risk]
 
 
-@dataclass()
-class RequestedResource:
-    type_: str
-    qty_: int | float
-
-
-@dataclass()
-class Resource(RequestedResource):
-    properties_: Dict[str, str | int | float]
-    anonymous_: bool = True
-
-    def __add__(self, other):
-        if self.type_ != other.type_ or not self.anonymous_:
-            logging.error(f"Trying to add Resource {self} and {other}, which is not possible!")
-            exit(1)
-        return Resource(self.type_, self.qty_+other.qty_, self.properties_, True)
-
+class Resource:
+    def __init__(self, type_: str, properties_: Dict[str, str | int | float] = {}):
+        self.type_ = type_
+        self.properties_ = properties_

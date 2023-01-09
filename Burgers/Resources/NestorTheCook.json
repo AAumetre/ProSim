@@ -1,9 +1,7 @@
 {
   "type": "Cook",
-  "quantity": 1,
   "properties": {
     "name": "Nestor",
     "experience": 0.8
-  },
-  "anonymous": "False"
+  }
 }

@@ -18,28 +18,34 @@ def main():
     scheduler.kernel_ = kernel
     factory = JsonFactory()
 
-    action_paths = glob.glob("./Burgers/Actions/*.json")
-    for ap in action_paths:
-        action = factory.create_action_from_json(ap)
-        kernel.add_action(action)
+    factory.inspect_folder_for_actions("./Burgers/Actions")
+    factory.inspect_folder_for_resources("./Burgers/Resources")
+    kernel.factory_ = factory
 
+    # tell the Kernel about the existing Actions
+    for action_name in factory.action_definition_path.keys():
+        action = factory.create_action(action_name)
+        kernel.declare_action(action)
+
+    # define infinite input resources
+    # TODO: would be nice if the kernel could produce a list of the existing inputs
     inf = float("inf")
-    kernel.add_to_stock(ItemCount("RawBurger", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("Oil", inf, "cL"))
-    kernel.add_to_stock(ItemCount("Spices", inf, "g"))
-    kernel.add_to_stock(ItemCount("Buns", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("Sauce", inf, "g"))
-    kernel.add_to_stock(ItemCount("CleanTomato", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("SaladLeave", inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("RawBurger",      inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("Oil",            inf, "cL"))
+    kernel.add_to_stock(ItemCount("Spices",         inf, "g"))
+    kernel.add_to_stock(ItemCount("Buns",           inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("Sauce",          inf, "g"))
+    kernel.add_to_stock(ItemCount("CleanTomato",    inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("SaladLeave",     inf, "cardinal"))
 
-    resource_paths = glob.glob("./Burgers/Resources/*.json")
-    for ap in resource_paths:
-        resource = factory.create_resource_from_json(ap)
-        kernel.add_resource(resource)
-    kernel.add_resource(Resource("Grill", 2, {}))
-    kernel.add_resource(Resource("KitchenBench", 2, {}))
+    # create an instance of each resource and give it to the Kernel
+    # TODO: BUG second cook is not created
+    for res_type in factory.resource_definition_path.keys():
+        kernel.add_resource(factory.create_resource(res_type))
+        if res_type in ["Grill", "KitchenBench"]:
+            kernel.add_resource(factory.create_resource(res_type))
 
-    kernel.produce_item(ItemCount("FinishedHamburger", 64, ""))
+    kernel.produce_item(ItemCount("FinishedHamburger", 8, ""))
     kernel.set_stochastic_mode(False)
     # TODO: issues when turning stochastic mode ON, process cannot end sometimes
 
@@ -48,7 +54,7 @@ def main():
         if cnt != float("inf"):
             print(it, cnt)
     logging.info(f"Simulation is over!\n{success=} "
-                 f"Cost {kernel.total_cost.duration_:.2f} h "
+                 f"Cost {kernel.total_cost_.duration_:.2f} h "
                  f"Duration {scheduler.time_:.2f} h.")
 
 
