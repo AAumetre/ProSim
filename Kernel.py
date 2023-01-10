@@ -143,7 +143,7 @@ class Kernel:
                     items_reduced = items_produced  # we're done
                 else:
                     items_reduced += self.items_to_make_[i_in_queue].qty_
-                    self.items_to_make_.remove(self.items_to_make_[i_in_queue])  # TODO: check which is deleted!
+                    self.items_to_make_.remove(self.items_to_make_[i_in_queue])  # TODO: check which one is deleted!
 
     def finish_action(self, action_: Action):
         # make Action's resources available again
@@ -158,12 +158,13 @@ class Kernel:
 
     def recover_from_risk(self, action_: Action, risk_: Risk) -> Cost:
         """ Defines what happens when an Action fails and a given Risk occurs. """
+        # TODO: original Action's outputs should be transferred to the Risk Action,
+        #       to be released only when all the risk steps are over.
         # Items that should have been produced should be scheduled for production again
-        self.actions_to_schedule_.append(action_)
+        self.actions_to_schedule_.append(action_.name_)
         # Risk defines a list of other Actions to be scheduled
         for action_name in risk_.recovering_actions_:
-            pass
-            # TODO: replace self.actions_to_schedule_.append(self.known_actions_[action_name])
+            self.actions_to_schedule_.append(action_name)
         # Risk also defines what is the lost Cost of the failure itself
         lost_duration = eval(risk_.lost_cost_.duration_, {"d": action_.events_.nominal_.duration_})
         lost_cost = eval(risk_.lost_cost_.cost_, {"c": action_.events_.nominal_.cost_})

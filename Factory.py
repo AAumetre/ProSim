@@ -1,5 +1,6 @@
 import glob
 import json
+from collections import defaultdict
 
 from Action import Action
 from Others import *
@@ -17,11 +18,11 @@ class Factory:
         raise NotImplementedError()
 
 
-class JsonFactory(Factory):  # TODO: we can define other formats later
+class JsonFactory(Factory):
 
     def __init__(self):
         self.action_definition_path: Dict[str, str] = {}  # Action.name_, path_to_json_definition
-        self.resource_definition_path: Dict[str, str] = {}  # Resource.type_, path_to_json_definition
+        self.resource_definition_path: Dict[str, List[str]] = defaultdict(list)  # Resource.type_, path_to_json_definition
 
     def create_action(self, name_: str) -> Action:
         return self.__create_action_from_json(self.action_definition_path[name_])
@@ -40,10 +41,10 @@ class JsonFactory(Factory):  # TODO: we can define other formats later
         """ Looks into a folder for JSON files defining Resources and records them. """
         res_paths = glob.glob(path_ + "/*.json")
         for rp in res_paths:
-            resource = self.__create_resource_from_json(rp)
-            self.resource_definition_path[resource.type_] = rp  # TODO: bug here, type is not unique
+            resource = self.create_resource_from_json(rp)
+            self.resource_definition_path[resource.type_].append(rp)
 
-    def __create_resource_from_json(self, path_: str) -> Resource:
+    def create_resource_from_json(self, path_: str) -> Resource:
         with open(path_, "r") as f:
             json_data = json.load(f)
             return self.__read_resource(json_data)

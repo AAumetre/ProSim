@@ -1,4 +1,4 @@
-import glob
+import matplotlib.pyplot as mp
 
 from Kernel import Kernel
 from Factory import JsonFactory
@@ -10,6 +10,20 @@ from Scheduler import Scheduler
 #       possibly also by which action. Generally speaking, objects should
 #       be used, rather than counts. This should enable producing Gantt-like
 #       views of what happened.
+
+def statistics(kernel, count):
+    kernel.set_stochastic_mode(True)
+    duration_samples = []
+    for i in range(1000):
+        kernel.scheduler_.time_ = 0.0
+        kernel.total_cost_.duration_ = 0.0
+        kernel.produce_item(ItemCount("FinishedHamburger", count, ""))
+        kernel.run()
+        duration_samples.append(kernel.total_cost_.duration_)
+        kernel.items_in_stock_["FinishedHamburger"] = 0
+    mp.hist(duration_samples, 100)
+    mp.show()
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -39,16 +53,17 @@ def main():
     kernel.add_to_stock(ItemCount("SaladLeave",     inf, "cardinal"))
 
     # create an instance of each resource and give it to the Kernel
-    # TODO: BUG second cook is not created
-    for res_type in factory.resource_definition_path.keys():
-        kernel.add_resource(factory.create_resource(res_type))
-        if res_type in ["Grill", "KitchenBench"]:
-            kernel.add_resource(factory.create_resource(res_type))
+    for res_options in factory.resource_definition_path.values():
+        for option in res_options:
+            kernel.add_resource(factory.create_resource_from_json(option))
+            if "Grill" in option:
+                kernel.add_resource(factory.create_resource_from_json(option))
+            if "KitchenBench" in option:
+                kernel.add_resource(factory.create_resource_from_json(option))
+
+    statistics(kernel, 64)
 
     kernel.produce_item(ItemCount("FinishedHamburger", 8, ""))
-    kernel.set_stochastic_mode(False)
-    # TODO: issues when turning stochastic mode ON, process cannot end sometimes
-
     success = kernel.run()
     for it, cnt in kernel.items_in_stock_.items():
         if cnt != float("inf"):
