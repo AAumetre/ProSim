@@ -1,4 +1,4 @@
-import glob
+import matplotlib.pyplot as mp
 
 from Kernel import Kernel
 from Factory import JsonFactory
@@ -11,6 +11,20 @@ from Scheduler import Scheduler
 #       be used, rather than counts. This should enable producing Gantt-like
 #       views of what happened.
 
+def statistics(kernel, count):
+    kernel.set_stochastic_mode(True)
+    duration_samples = []
+    for i in range(1000):
+        kernel.scheduler_.time_ = 0.0
+        kernel.total_cost_.duration_ = 0.0
+        kernel.produce_item(ItemCount("FinishedHamburger", count, ""))
+        kernel.run()
+        duration_samples.append(kernel.total_cost_.duration_)
+        kernel.items_in_stock_["FinishedHamburger"] = 0
+    mp.hist(duration_samples, 100)
+    mp.show()
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     scheduler = Scheduler()
@@ -18,34 +32,44 @@ def main():
     scheduler.kernel_ = kernel
     factory = JsonFactory()
 
-    action_paths = glob.glob("./Burgers/Actions/*.json")
-    for ap in action_paths:
-        action = factory.create_action_from_json(ap)
-        kernel.add_action(action)
+    factory.inspect_folder_for_actions("./Burgers/Actions")
+    factory.inspect_folder_for_resources("./Burgers/Resources")
+    kernel.factory_ = factory
 
+    # tell the Kernel about the existing Actions
+    for action_name in factory.action_definition_path.keys():
+        action = factory.create_action(action_name)
+        kernel.declare_action(action)
+
+    # define infinite input resources
+    # TODO: would be nice if the kernel could produce a list of the existing inputs
     inf = float("inf")
-    kernel.add_to_stock(ItemCount("RawBurger", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("Oil", inf, "cL"))
-    kernel.add_to_stock(ItemCount("Spices", inf, "g"))
-    kernel.add_to_stock(ItemCount("Buns", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("Sauce", inf, "g"))
-    kernel.add_to_stock(ItemCount("CleanTomato", inf, "cardinal"))
-    kernel.add_to_stock(ItemCount("SaladLeave", inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("RawBurger",      inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("Oil",            inf, "cL"))
+    kernel.add_to_stock(ItemCount("Spices",         inf, "g"))
+    kernel.add_to_stock(ItemCount("Buns",           inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("Sauce",          inf, "g"))
+    kernel.add_to_stock(ItemCount("CleanTomato",    inf, "cardinal"))
+    kernel.add_to_stock(ItemCount("SaladLeave",     inf, "cardinal"))
 
-    kernel.add_resource(Resource("Cook", 2))
-    kernel.add_resource(Resource("Grill", 2))
-    kernel.add_resource(Resource("KitchenBench", 2))
+    # create an instance of each resource and give it to the Kernel
+    for res_options in factory.resource_definition_path.values():
+        for option in res_options:
+            kernel.add_resource(factory.create_resource_from_json(option))
+            if "Grill" in option:
+                kernel.add_resource(factory.create_resource_from_json(option))
+            if "KitchenBench" in option:
+                kernel.add_resource(factory.create_resource_from_json(option))
 
-    kernel.produce_item(ItemCount("FinishedHamburger", 64, ""))
-    kernel.set_stochastic_mode(False)
-    # TODO: issues when turning stochastic mode ON, process cannot end sometimes
+    statistics(kernel, 64)
 
+    kernel.produce_item(ItemCount("FinishedHamburger", 8, ""))
     success = kernel.run()
     for it, cnt in kernel.items_in_stock_.items():
         if cnt != float("inf"):
             print(it, cnt)
     logging.info(f"Simulation is over!\n{success=} "
-                 f"Cost {kernel.total_cost.duration_:.2f} h "
+                 f"Cost {kernel.total_cost_.duration_:.2f} h "
                  f"Duration {scheduler.time_:.2f} h.")
 
 

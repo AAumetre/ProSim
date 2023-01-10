@@ -5,8 +5,8 @@
   ],
   "outputs": [],
   "resources": [
-    {"type": "Cook", "qty":  1},
-    {"type": "Grill", "qty": 1}
+    {"type": "Cook"},
+    {"type": "Grill"}
   ],
   "events": {
     "nominal": {"duration": 0.1, "cost":  0.0},
