@@ -1,7 +1,5 @@
 import math
 from typing import *
-
-import numpy as np
 import scipy
 
 Function1D = Callable[[float], float]
@@ -29,8 +27,8 @@ class NormalMixedLaw:
         # sample the new density function
         _, new_samples = sample_function(new_density, new_def, self.phi_dx_)
         # zero-pad phi to match the new size
-        zeros_left = [0] * int(abs(self.phi_def_[0] - new_def[0]) / self.phi_dx_)
-        zeros_right = [0] * int(abs(self.phi_def_[1] - new_def[1]) / self.phi_dx_)
+        zeros_left = [0.0] * int(abs(self.phi_def_[0] - new_def[0]) / self.phi_dx_)
+        zeros_right = [0.0] * int(abs(self.phi_def_[1] - new_def[1]) / self.phi_dx_)
         # update phi with a discrete convolution product
         self.phi_ = list(scipy.signal.convolve(zeros_left + self.phi_ + zeros_right, new_samples) / sum(self.phi_))
         self.phi_def_ = new_def
@@ -38,12 +36,21 @@ class NormalMixedLaw:
 
     def clean_up_phi(self):
         """ Remove parts of phi which are below epsilon. """
-        for i in range(len(self.phi_)):
+        i = 0
+        while i < len(self.phi_):
             if self.phi_[i] > self.epsilon_:
                 self.samples_left_ += i
                 self.phi_ = self.phi_[i:]
                 self.phi_def_ = (0.0, self.phi_def_[1] - i*self.phi_dx_)
                 break
+            i += 10
+        i = len(self.phi_) - 1
+        while i > 0:
+            if self.phi_[i] > self.epsilon_:
+                self.phi_ = self.phi_[:i]
+                self.phi_def_ = (0.0, len(self.phi_)*self.phi_dx_)
+                break
+            i -= 10
 
     def build_distribution(self, distributions_: List[NormalDensity]) -> Function1D:
         def phi(x_: float) -> float:
@@ -56,8 +63,7 @@ class NormalMixedLaw:
 
     def get_sampling(self) -> Tuple[List[float], List[float]]:
         first_non_zero = self.phi_def_[0] + self.samples_left_*self.phi_dx_
-        last_value = first_non_zero + int(len(self.phi_)*self.phi_dx_)
-        x = list(np.linspace(first_non_zero, last_value, num=len(self.phi_)))
+        x = [first_non_zero+i*self.phi_dx_ for i in range(len(self.phi_))]
         return x, self.phi_
 
 
@@ -69,7 +75,7 @@ def sample_function(f_: Function1D, def_: Tuple[float, float], dx_: float = 0.01
     """ Compute the [y], y=f_(x) arrays. """
     min_x, max_x = def_[0], def_[1]
     n_samples = int((max_x - min_x) / dx_)
-    xs, ys = [0] * n_samples, [0] * n_samples
+    xs, ys = [0.0] * n_samples, [0.0] * n_samples
     for i in range(n_samples):
         xs[i] = min_x + i * dx_
         ys[i] = f_(xs[i])
