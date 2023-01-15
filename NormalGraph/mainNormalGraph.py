@@ -1,3 +1,5 @@
+import json
+
 import matplotlib.pyplot as mp
 from typing import *
 import scipy as scipy
@@ -52,40 +54,48 @@ def compute_variance(f_: Function1D, esp_: float, def_: Tuple[float, float]) -> 
     return v
 
 
+def load_graph_json(path_: str):
+    """ Load TasksDefinition.json and FlowDefinition.json and return all the necessary objets. """
+    starting_node, nodes = None, {}
+    # read tasks definitions
+    with open(path_+"/TasksDefinition.json") as f:
+        data = json.load(f)
+        for t in data["tasks"]:
+            nodes[t["name"]] = Task(t["name"], (t["normal"][0], t["normal"][1]), t["layer"])
+        starting_node = nodes[data["starting_task"]]
+    edges = []
+    # read edges definition
+    with open(path_+"/FlowDefinition.json") as f:
+        data = json.load(f)
+        for e in data["weighted_edges"]:
+            edges.append((nodes[e["from"]], nodes[e["to"]], e["p"]))
+    # create the graph
+    graph = nx.DiGraph()
+    for node in nodes.values():
+        graph.add_node(node, layer=node.layer_)
+    graph.add_weighted_edges_from(edges)
+    return starting_node, graph
+
+
 def main():
-    # TODO: load process from JSON files
-    # TODO: in those files, have a different way to define sigma
+    # TODO: in JSON files, have a different way to define sigma, other than giving its value
+    # TODO: implement Monte-Carlo simulation, to cross-check the computation of mixed law (currently wrong)
+    # TODO: fix mixed law (convolution?)
+    # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
+    # TODO: have the NormalMixedLaw compute its definition set, based on sigmas
+
     # Define a graph describing the process, starting with the tasks
-    start = Task("start", (0.0, 0.0),   0)
-    task1 = Task("task1", (10.0, 0.1),  1)
-    nom1  = Task("nom1",  (1.0, 0.1),   2)
-    risk1 = Task("risk1", (1.5, 0.1),   2)
-    risk2 = Task("risk2", (2.0, 0.01),  2)
-    task2 = Task("task2", (0.5, 0.1),   3)
-    nom2 = Task("nom2",   (1.0, 0.1),   4)
-    risk3 = Task("risk3", (2.0, 0.08),  4)
-    end =   Task("end",   (1.0, 0.01),  5)
-    # the graph defines the edges between the tasks
-    g = nx.DiGraph()
-    nodes = [start, task1, nom1, risk1, risk2, task2, nom2, risk3, end]
-    for node in nodes:
-        g.add_node(node, layer=node.layer_)
-    nominal_edges = [(start, task1, 1.0), (task1, nom1, 0.7), (nom1, task2, 1.0), (task2, nom2, 0.9), (nom2, end, 1.0)]
-    risk_edges = [(task1, risk1, 0.2), (task1, risk2, 0.1), (risk1, task2, 1.0), (risk2, task2, 1.0),
-                  (task2, risk3, 0.1), (risk3, end, 1.0)]
-    g.add_weighted_edges_from(nominal_edges)
-    g.add_weighted_edges_from(risk_edges)
+    start_node, g = load_graph_json("Examples/LowRiskStraightProcess")
 
     # draw the graph
     options = {"node_size": 3000, "font_color": "white", "arrowsize": 20}
     positioning = nx.multipartite_layout(g, subset_key="layer")
     nx.draw_networkx(g, pos=positioning, with_labels=True, font_weight='bold', **options)
     edge_labels = nx.get_edge_attributes(g, "weight")
-    nx.draw_networkx_edge_labels(g, positioning, edge_labels)
-    # mp.show()
+    nx.draw_networkx_edge_labels(g, positioning, edge_labels)  # shown later
 
     # browse the graph and build the mixed probability law
-    mixed = build_mixed_law(g, start)
+    mixed = build_mixed_law(g, start_node)
     definition = (10.0, 16.0)  # manually defined-
     mixed_phi = mixed.get_function()
     integral, error = scipy.integrate.quad(mixed_phi, *definition)

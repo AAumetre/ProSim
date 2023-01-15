@@ -1,0 +1,15 @@
+{
+  "weighted_edges": [
+    {"from": "start", "to": "task1", "p": 1.0},
+    {"from": "nom1", "to": "task2", "p": 1.0},
+    {"from": "nom2", "to": "end", "p": 1.0},
+    {"from": "risk3", "to": "end", "p": 1.0},
+    {"from": "risk1", "to": "task2", "p": 1.0},
+    {"from": "risk2", "to": "task2", "p": 1.0},
+    {"from": "task2", "to": "nom2", "p": 0.9},
+    {"from": "task1", "to": "nom1", "p": 0.7},
+    {"from": "task1", "to": "risk1", "p": 0.2},
+    {"from": "task1", "to": "risk2", "p": 0.1},
+    {"from": "task2", "to": "risk3", "p": 0.1}
+  ]
+}
