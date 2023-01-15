@@ -9,7 +9,9 @@
     {"type": "Grill"}
   ],
   "events": {
-    "nominal": {"duration": 0.1, "cost":  0.0},
+    "nominal": {"duration": 1.0, "cost":  0.0},
+    "duration_variability": "1",
+    "cost_variability": "1",
     "risks": []
   }
 }

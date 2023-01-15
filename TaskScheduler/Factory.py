@@ -28,7 +28,8 @@ class JsonFactory(Factory):
         return self.__create_action_from_json(self.action_definition_path[name_])
 
     def create_resource(self, type_) -> Resource:
-        return self.__create_resource_from_json(self.resource_definition_path[type_])
+        # TODO: should not be used, to be re-considered
+        return self.create_resource_from_json(self.resource_definition_path[type_][0])
 
     def inspect_folder_for_actions(self, path_: str):
         """ Looks into a folder for JSON files defining Actions and records them. """
@@ -64,7 +65,9 @@ class JsonFactory(Factory):
         for e in d_["resources"]:
             resources.append(self.__read_resource(e))
         events = self.__read_events(d_["events"])
-        return Action(d_["name"], inputs, outputs, resources, events)
+        duration_v = d_["events"]["duration_variability"]
+        cost_v = d_["events"]["cost_variability"]
+        return Action(d_["name"], inputs, outputs, resources, events, duration_v, cost_v)
 
     def __read_itemcount(self, d_: Dict) -> ItemCount:
         return ItemCount(d_["type"], d_["qty"], d_["unit"])

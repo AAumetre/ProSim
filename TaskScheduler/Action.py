@@ -5,7 +5,8 @@ from numpy import random
 class Action:
 
     def __init__(self, name_: str, inputs_: List[ItemCount], outputs: List[ItemCount],
-                 resources_: List[Resource], events_: Events):
+                 resources_: List[Resource], events_: Events,
+                 duration_variability_: str, cost_variability_: str):
         self.name_: str = name_
         self.inputs_: List[ItemCount] = inputs_
         self.outputs_: List[ItemCount] = outputs
@@ -14,6 +15,8 @@ class Action:
         self.events_ = events_
         self.stochastic_mode_: bool = False
         self.success_: bool = True
+        self.duration_variability_: str = duration_variability_
+        self.cost_variability_: str = cost_variability_
 
     def __repr__(self):
         return self.name_
@@ -42,10 +45,16 @@ class Action:
             if dice_value <= upper_bound:
                 if index >= len(self.events_.risks_):  # this is the nominal case
                     self.success_ = True
+                    if "Cook" in self.allocated_resources.keys():  # TODO: not really the intended use
+                        # actual_duration = eval(self.duration_variability_, {"experience": self.properties_["experience"]})
+                        cook_experience = self.allocated_resources["Cook"][0].properties_["experience"]
+                        actual_duration = self.events_.nominal_.duration_*random.normal(eval(self.duration_variability_,
+                                                             {"experience": cook_experience}), 1.0)
+                        return True, Cost(actual_duration, self.events_.nominal_.cost_)
                     return True, self.events_.nominal_
                 else:
                     self.success_ = False
-                    return False, self.events_.risks_[index]
+                    return False, self.events_.risks_[index-1]
 
     def get_output_count(self, type_: str) -> int:
         """ Finds the matching Item in its output, if any, and returns how many it produces. """
@@ -58,11 +67,6 @@ class Action:
         if type_ not in self.allocated_resources:
             self.allocated_resources[type_] = []
         self.allocated_resources[type_].append(resource_)
-
-    def allocate_req_resource(self, type_: str, resource_: Resource):
-        if type_ not in self.allocated_resources:
-            self.allocated_resources[type_] = [Resource(resource_.type_, 0, {})]
-        self.allocated_resources[type_][0].qty_ += resource_.qty_
 
 
 class ActionImpact:

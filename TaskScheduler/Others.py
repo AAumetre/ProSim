@@ -37,4 +37,4 @@ class Events:
 class Resource:
     def __init__(self, type_: str, properties_: Dict[str, str | int | float] = {}):
         self.type_ = type_
-        self.properties_ = properties_
+        self.properties_: Dict[str, str | int | float] = properties_

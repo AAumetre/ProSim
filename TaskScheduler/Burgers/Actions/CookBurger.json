@@ -14,6 +14,8 @@
   ],
   "events": {
     "nominal": {"duration": 0.05, "cost":  0.0},
+    "duration_variability": "(1+0.1*(1-1/experience))",
+    "cost_variability": "1",
     "risks": [
       { "name": "burgers burn",
         "actions":  ["Clean up grill"],
@@ -23,7 +25,7 @@
       { "name": "burgers too salted",
         "actions":  [],
         "probability":  "0.3",
-        "lost_cost": {"duration":  "1.1*d", "cost":  "c"}
+        "lost_cost": {"duration":  "5*d", "cost":  "c"}
       }
     ]
   }

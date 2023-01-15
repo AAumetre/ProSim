@@ -13,6 +13,8 @@
   ],
   "events": {
     "nominal": {"duration": 0.1, "cost":  0.0},
+    "duration_variability": "(1+0.1*(1-1/experience))",
+    "cost_variability": "1",
     "risks": []
   }
 }
