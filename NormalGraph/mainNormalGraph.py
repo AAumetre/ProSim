@@ -4,9 +4,10 @@ import time
 import matplotlib.pyplot as mp
 from typing import *
 import scipy as scipy
+from networkx import DiGraph
 
-from NormalGraph.GraphMonteCarlo import MonteCarlo
-from NormalMixedLaw import NormalMixedLaw
+from NormalGraph.GraphMonteCarlo import MonteCarlo, NodeType
+from NormalMixedLaw import NormalMixedLaw, NormalDensity
 from Task import Task
 import networkx as nx
 
@@ -34,15 +35,28 @@ def build_integral_function(f_: Function1D, def_: Tuple[float, float]) -> Functi
 
 def build_mixed_law(graph_, start_) -> NormalMixedLaw:
     """ Uses a NetworkX graph to build a mixed probability distribution law. """
-    mixed = NormalMixedLaw({}, (0.0, 0.1))  # initialise the mixed law
-    bfs_edges = nx.bfs_edges(graph_, start_)
-    for u, v in bfs_edges:
-        p = graph_[u][v]["weight"]
-        m, s = v.normal_
-        if m != 0.0 and s != 0.0:
-            mixed.add_normal((p, *v.normal_))
+    mixed = NormalMixedLaw(0.01)  # initialise the mixed law
+    # need to iterate over nodes and do smth will all edges going out of a node
+    densities = extract_densities(graph_, start_, {})
+    for density in densities.values():
+        mixed.add_normal_densities(density)
     return mixed
 
+
+def extract_densities(graph_: DiGraph, start_: NodeType, known_densities) -> Dict[Task, List[NormalDensity]]:
+    successors = graph_.succ[start_]
+    normal_densities = []  # p, m, s
+    # at this level, extract the probability densities
+    for succ, keys in successors.items():
+        p = keys["weight"]
+        m, s = succ.normal_
+        normal_densities.append((p, m, s))
+    known_densities[start_] = normal_densities
+    # go to the next level
+    for succ, keys in successors.items():
+        if succ not in known_densities:  # avoid re-visit
+            known_densities.update(extract_densities(graph_, succ, known_densities))
+    return known_densities
 
 def compute_esperance(f_: Function1D, def_: Tuple[float, float]) -> float:
     """ Computes the esperance of X, where f_ is the probability density function. """
@@ -81,17 +95,18 @@ def load_graph_json(path_: str):
 
 def main():
     # TODO: in JSON files, have a different way to define sigma, other than giving its value
-    # TODO: implement Monte-Carlo simulation, to cross-check the computation of mixed law (currently wrong)
+    # TODO: check out Markov chains, might be a bit restrictive
     # TODO: fix mixed law (convolution?)
+    # TODO: set-up automatic testing
     # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
     # TODO: have the NormalMixedLaw compute its definition set, based on sigmas
 
     # Define a graph describing the process, starting with the tasks
-    start_node, g = load_graph_json("Examples/LowRiskStraightProcess")
+    start_node, g = load_graph_json("Examples/SimpleRiskProcess")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    mc_sample = solver.compute_sample(10000)
+    mc_sample = solver.compute_sample(10000, True)
 
     # draw the graph
     options = {"node_size": 3000, "font_color": "white", "arrowsize": 20}
@@ -102,7 +117,15 @@ def main():
 
     # browse the graph and build the mixed probability law
     mixed = build_mixed_law(g, start_node)
-    definition = (10.0, 16.0)  # manually defined, see TODOs
+    fig, ax = mp.subplots()
+    ax.hist(mc_sample, bins=100)
+    mixed.phi_ = [y/0.8*350 for y in mixed.phi_]
+    ax.plot(*mixed.get_sampling())
+    mp.show()
+    return
+
+
+
     mixed_phi = mixed.get_function()
     integral, error = scipy.integrate.quad(mixed_phi, *definition)
     mass_f = build_integral_function(lambda x: mixed_phi(x) / integral, definition)

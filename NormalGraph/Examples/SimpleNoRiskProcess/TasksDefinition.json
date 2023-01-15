@@ -1,0 +1,10 @@
+{
+  "starting_task": "start",
+  "ending_task": "end",
+  "tasks": [
+    {"name": "start", "normal": [0.0, 0.0],   "layer": 0},
+    {"name": "task1", "normal": [1.0, 0.1],   "layer": 1},
+    {"name": "task2", "normal": [2.0, 0.1],   "layer": 2},
+    {"name": "end",   "normal": [3.0, 0.01],  "layer": 3}
+  ]
+}
