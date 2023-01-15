@@ -31,16 +31,18 @@ class NormalMixedLaw:
         # zero-pad phi to match the new size
         zeros_left = [0] * int(abs(self.phi_def_[0] - new_def[0]) / self.phi_dx_)
         zeros_right = [0] * int(abs(self.phi_def_[1] - new_def[1]) / self.phi_dx_)
-        self.phi_ = zeros_left + self.phi_ + zeros_right
         # update phi with a discrete convolution product
-        self.phi_ = list(scipy.signal.convolve(self.phi_, new_samples) / sum(self.phi_))
+        self.phi_ = list(scipy.signal.convolve(zeros_left + self.phi_ + zeros_right, new_samples) / sum(self.phi_))
         self.phi_def_ = new_def
-        return
-        # clean up phi, TODO for later optimisation, not so trivial
+        self.clean_up_phi()
+
+    def clean_up_phi(self):
+        """ Remove parts of phi which are below epsilon. """
         for i in range(len(self.phi_)):
             if self.phi_[i] > self.epsilon_:
                 self.samples_left_ += i
                 self.phi_ = self.phi_[i:]
+                self.phi_def_ = (0.0, self.phi_def_[1] - i*self.phi_dx_)
                 break
 
     def build_distribution(self, distributions_: List[NormalDensity]) -> Function1D:
@@ -50,17 +52,12 @@ class NormalMixedLaw:
                 p, m, s = dist
                 y += p * normal_dist(x_, m, s)
             return y
-
-        return phi
-
-    def get_function(self) -> Function1D:
-        def phi(x_: float) -> float:
-            return self.phi_[int(x_ / self.phi_dx_)]
-
         return phi
 
     def get_sampling(self) -> Tuple[List[float], List[float]]:
-        x = np.linspace(0.0, len(self.phi_) * self.phi_dx_, num=len(self.phi_))
+        first_non_zero = self.phi_def_[0] + self.samples_left_*self.phi_dx_
+        last_value = first_non_zero + int(len(self.phi_)*self.phi_dx_)
+        x = list(np.linspace(first_non_zero, last_value, num=len(self.phi_)))
         return x, self.phi_
 
 

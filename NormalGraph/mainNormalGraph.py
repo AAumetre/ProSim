@@ -100,13 +100,14 @@ def main():
     # TODO: set-up automatic testing
     # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
     # TODO: have the NormalMixedLaw compute its definition set, based on sigmas
+    mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, g = load_graph_json("Examples/SimpleRiskProcess")
+    start_node, g = load_graph_json("Examples/SimpleTwoRiskProcess")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    mc_sample = solver.compute_sample(10000, True)
+    mc_sample = solver.compute_sample(1000, True)
 
     # draw the graph
     options = {"node_size": 3000, "font_color": "white", "arrowsize": 20}
@@ -119,8 +120,9 @@ def main():
     mixed = build_mixed_law(g, start_node)
     fig, ax = mp.subplots()
     ax.hist(mc_sample, bins=100)
-    mixed.phi_ = [y/0.8*350 for y in mixed.phi_]
-    ax.plot(*mixed.get_sampling())
+    mixed.phi_ = [y/0.8*40 for y in mixed.phi_]
+    sampled_mixed = mixed.get_sampling()
+    ax.plot(*sampled_mixed)
     mp.show()
     return
 

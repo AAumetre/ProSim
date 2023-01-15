@@ -1,0 +1,8 @@
+{
+  "weighted_edges": [
+    {"from": "start", "to": "nom1",  "p": 0.8},
+    {"from": "start", "to": "risk1", "p": 0.2},
+    {"from": "nom1",  "to": "end",  "p": 1.0},
+    {"from": "risk1", "to": "end",  "p": 1.0}
+  ]
+}
