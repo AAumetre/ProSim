@@ -2,28 +2,31 @@ import collections
 import math
 
 from Action import Action
+from Action import ActionImpact
 from Others import *
 from collections import defaultdict
 from Scheduler import Scheduler
+from Factory import Factory
 
 
 class Kernel:
 
     def __init__(self, scheduler_: Scheduler):
-        self.actions_: Dict[str, Action] = {}
-        self.cookbook_: Dict[str, Action] = {}  # Item.type_, Action
+        self.stochastic_mode: bool = False
+        self.cookbook_: Dict[str, Dict[str,int|float]] = {}  # Item.type_, {name:Action.name_, qty:quantity}  # TODO: need a type here
         self.expected_items_: Dict[str, int] = defaultdict(int)  # Item.type_, count
         self.items_in_stock_: Dict[str, int] = defaultdict(int)
-        self.available_resources_: Dict[str, int] = defaultdict(int)
+        self.available_resources_: Dict[str, List[Resource]] = {}
+        self.actions_requirements_: Dict[str, ActionImpact] = {}  # Action.name_: ActionRequirements
         self.items_to_make_: List[ItemCount] = []
-        self.actions_to_schedule_: List[Action] = []
-        self.existing_resources: Set[str] = set()
-        self.total_cost = Cost(0.0, 0.0)
+        self.actions_to_schedule_: List[str] = []  # contains Action names
+        self.total_cost_ = Cost(0.0, 0.0)
         self.scheduler_ = scheduler_
+        self.factory_: Factory = Factory()
 
     def __repr__(self):
         return f"KERNEL. Stock:{str(self.items_in_stock_)} Actions:{str(self.actions_to_schedule_)} " \
-               f"Time: {self.total_cost.duration_}"
+               f"Time: {self.total_cost_.duration_}"
 
     def run(self) -> bool:
         """ Runs for as long as possible. Returns true is there is nothing left to do. """
@@ -33,6 +36,7 @@ class Kernel:
             at_least_one_change = self.try_producing_items()
             events_ran = self.scheduler_.run_all()
             can_run = could_schedule_action or at_least_one_change or events_ran
+
         # check whether everything is done
         if len(self.actions_to_schedule_) > 0 or len(self.items_to_make_) > 0:
             # TODO: report why, what was missing? Currently not really working
@@ -44,29 +48,35 @@ class Kernel:
     def try_scheduling_actions(self) -> bool:
         """ Run all posted actions that can be done. """
         at_least_one_scheduled = False
-        for action in self.actions_to_schedule_.copy():
+        for action_name in self.actions_to_schedule_.copy():
             # check if all pre-requisites are met
-            if self.action_can_execute(action)[0]:
+            if self.action_can_execute(action_name)[0]:
+                # create the Action
+                action = self.factory_.create_action(action_name)
+                # schedule it
                 self.schedule_action(action)
                 # remove the action from the queue
-                self.actions_to_schedule_.remove(action)
+                self.actions_to_schedule_.remove(action_name)
                 at_least_one_scheduled = True
         return at_least_one_scheduled
 
     def schedule_action(self, action_: Action):
+        # take resources out of kernel and allocate them to Action
+        for resource in action_.resources_:
+            action_.allocate_resource(resource.type_, self.available_resources_[resource.type_].pop())
+
+        # update Action's stochastic mode TODO: could be done at the creation of the Action
+        action_.stochastic_mode_ = self.stochastic_mode
         # update cost
         success, cost_or_event = action_.compute_cost()
         if success:
             cost = cost_or_event
         else:
             cost = self.recover_from_risk(action_, cost_or_event)
-        self.total_cost += cost
+        self.total_cost_ += cost
 
         # schedule end of action
         self.scheduler_.schedule(action_, cost.duration_)
-        # make resources unavailable
-        for res in action_.resources_:
-            self.available_resources_[res.type_] -= res.qty_
         # update stocks
         for item in action_.inputs_:
             self.items_in_stock_[item.type_] -= item.qty_
@@ -80,13 +90,16 @@ class Kernel:
             # if we do not have enough stock, schedule the required work
             if (self.items_in_stock_[item.type_] + self.expected_items_[item.type_]) < item.qty_:
                 # find out how to make what's missing
-                needed_action = self.get_recipe(item.type_)
-                can_execute, missing_items = self.action_can_execute(needed_action)
-                n_actions_needed = math.ceil(item.qty_ / needed_action.get_output_count(item.type_))
+                needed_action_name = self.get_recipe(item.type_)
+                needed_action_impacts = self.actions_requirements_[needed_action_name]
+                can_execute, missing_items = self.action_can_execute(needed_action_name)
+                # how many of that Action should be scheduled?
+                n_items_produced = self.cookbook_[item.type_]["qty"]
+                n_actions_needed = math.ceil(item.qty_ / n_items_produced)
 
                 # delegate the scheduling of the action, only enqueue it here
                 for _ in range(n_actions_needed):
-                    self.actions_to_schedule_.append(needed_action)
+                    self.actions_to_schedule_.append(needed_action_name)
                 # there are possibly missing items, try to make them
                 for input_item in missing_items:
                     for _ in range(n_actions_needed):
@@ -94,12 +107,14 @@ class Kernel:
 
                 # decrease the number of needed items
                 for _ in range(n_actions_needed):
-                    self.reduce_items_needs(needed_action.outputs_)
+                    self.reduce_items_needs(needed_action_impacts.outputs_)
                 # increase the number of expected items
-                for out in needed_action.outputs_:
-                    self.expected_items_[out.type_] += n_actions_needed*needed_action.get_output_count(out.type_)
-                # subtract expected this item
+                for out in needed_action_impacts.outputs_:
+                    out_items_produced = self.cookbook_[out.type_]["qty"]
+                    self.expected_items_[out.type_] += n_actions_needed*out_items_produced
+                # subtract expected of this item
                 self.expected_items_[item.type_] -= item.qty_
+
             else:
                 if self.items_in_stock_[item.type_] < item.qty_:  # we're counting on expected items
                     self.expected_items_[item.type_] -= item.qty_ - self.items_in_stock_[item.type_]
@@ -128,63 +143,80 @@ class Kernel:
                     items_reduced = items_produced  # we're done
                 else:
                     items_reduced += self.items_to_make_[i_in_queue].qty_
-                    self.items_to_make_.remove(self.items_to_make_[i_in_queue])  # TODO: check which is deleted!
+                    self.items_to_make_.remove(self.items_to_make_[i_in_queue])  # TODO: check which one is deleted!
 
     def finish_action(self, action_: Action):
         # make Action's resources available again
-        for res in action_.resources_:
-            self.available_resources_[res.type_] += res.qty_
+        for resource_type, resource_list in action_.allocated_resources.items():
+            self.available_resources_[resource_type] += action_.allocated_resources[resource_type]
         # make Action's outputs available
         if action_.success_:
             for item in action_.outputs_:
                 self.items_in_stock_[item.type_] += item.qty_
                 self.expected_items_[item.type_] = max(0, self.expected_items_[item.type_] - item.qty_)
+        # TODO: check that after this, the Action is deleted
 
-    def get_recipe(self, item_name_: str) -> Action:
-        """ Looks for the action that allows to produce a given item. """
-        if item_name_ in self.cookbook_:
-            return self.cookbook_[item_name_]
-        else:
-            logging.error(f"Cannot produce Item \"{item_name_}\".")
-            exit(1)
+    def recover_from_risk(self, action_: Action, risk_: Risk) -> Cost:
+        """ Defines what happens when an Action fails and a given Risk occurs. """
+        # TODO: original Action's outputs should be transferred to the Risk Action,
+        #       to be released only when all the risk steps are over.
+        # Items that should have been produced should be scheduled for production again
+        self.actions_to_schedule_.append(action_.name_)
+        # Risk defines a list of other Actions to be scheduled
+        for action_name in risk_.recovering_actions_:
+            self.actions_to_schedule_.append(action_name)
+        # Risk also defines what is the lost Cost of the failure itself
+        lost_duration = eval(risk_.lost_cost_.duration_, {"d": action_.events_.nominal_.duration_})
+        lost_cost = eval(risk_.lost_cost_.cost_, {"c": action_.events_.nominal_.cost_})
+        return Cost(lost_duration, lost_cost)
 
-    def add_action(self, action_: Action) -> None:
-        """ Add a possible Action to the dictionary. """
-        if action_.name_ in self.actions_:
-            logging.error(f"Kernel cannot add Action \"{action_.name_}\" because an Action with the same"
-                          f"name already exists: {self.actions_[action_.name_]}.")
-            exit(1)
-        else:
-            # register the new action
-            self.actions_[action_.name_] = action_
-            # update the cookbook
-            for item in action_.outputs_:
-                if item.type_ in self.cookbook_:
-                    logging.error(f"Kernel cannot add recipe \"{action_.name_}\" for \"{item.type_}\""
-                                  f"because a recipe already exists: {self.cookbook_[item.type_]}.")
-                    exit(1)
-                else:
-                    self.cookbook_[item.type_] = action_
-            # update known resources
-            for res in action_.resources_:
-                self.existing_resources.add(res.type_)
-
-    def action_can_execute(self, action_: Action) -> Tuple[bool, List[ItemCount]]:
-        """ Checks whether an Action can be executed, if not, queues what is needed. """
+    def action_can_execute(self, action_name_: str) -> Tuple[bool, List[ItemCount]]:
+        """ Checks whether an Action can be executed, if not, returns what is needed. """
         needed_items = []
         can_execute = True
-        for item in action_.inputs_:
+        for item in self.actions_requirements_[action_name_].inputs_:
             if self.items_in_stock_[item.type_] >= item.qty_:  # TODO: unit conversion
                 continue
             else:
                 logging.debug(f"Item {item.type_} not in sufficient quantity.")
                 needed_items.append(item)
                 can_execute = False
-        for res in action_.resources_:
-            if self.available_resources_[res.type_] < res.qty_:
+        n_required_resources = defaultdict(int)
+        for res in self.actions_requirements_[action_name_].resources_:  # TODO: should not be needed here
+            # build a dict, containing req_type: count
+            n_required_resources[res.type_] += 1  # TODO: should be done differently, method in ActionRequirements?
+        for resource_type, count in n_required_resources.items():
+            if not self.available_resources_[resource_type]:
                 logging.debug(f"Resource {res.type_} is currently not available.")
                 can_execute = False
+                break
+            if len(self.available_resources_[resource_type]) < count:
+                logging.debug(f"Resource {res.type_} is currently not available.")
+                can_execute = False
+                break
         return can_execute, needed_items
+
+    def get_recipe(self, item_name_: str) -> str:
+        """ Looks for the Action that allows to produce a given item and returns its name. """
+        if item_name_ in self.cookbook_:
+            return self.cookbook_[item_name_]["name"]
+        else:
+            logging.error(f"Cannot produce Item \"{item_name_}\".")
+            exit(1)
+
+    def declare_action(self, action_: Action) -> None:
+        """ Get information about an Action, its inputs, outputs and resources. """
+        # update the cookbook
+        for item in action_.outputs_:
+            if item.type_ in self.cookbook_:
+                # TODO: actually, handling alternate recipes is a feature that we might need
+                logging.error(f"Kernel cannot add recipe \"{action_.name_}\" for \"{item.type_}\""
+                              f"because a recipe already exists: {self.cookbook_[item.type_]}.")
+                exit(1)
+            else:
+                self.cookbook_[item.type_] = {"name": action_.name_, "qty": action_.get_output_count(item.type_)}
+        # update Action requirements dictionary
+        self.actions_requirements_[action_.name_] = ActionImpact(action_)
 
     def produce_item(self, item_: ItemCount) -> None:
         """ Adds an item to produce right now to the queue. """
@@ -199,23 +231,9 @@ class Kernel:
 
     def add_resource(self, res_: Resource) -> None:
         """ Give a new resource to the Kernel. """
-        self.available_resources_[res_.type_] += res_.qty_
-        self.existing_resources.add(res_.type_)
+        if res_.type_ not in self.available_resources_:
+            self.available_resources_[res_.type_] = []
+        self.available_resources_[res_.type_].append(res_)
 
     def set_stochastic_mode(self, enabled_: bool) -> None:
-        for action in self.actions_.values():
-            action.stochastic_mode_ = enabled_
-        for action in self.actions_to_schedule_:
-            action.stochastic_mode_ = enabled_
-
-    def recover_from_risk(self, action_: Action, risk_: Risk) -> Cost:
-        """ Defines what happens when an Action fails and a given Risk occurs. """
-        # Items that should have been produced should be scheduled for production again
-        self.actions_to_schedule_.append(action_)
-        # Risk defines a list of other Actions to be scheduled
-        for action_name in risk_.recovering_actions_:
-            self.actions_to_schedule_.append(self.actions_[action_name])
-        # Risk also defines what is the lost Cost of the failure itself
-        lost_duration = eval(risk_.lost_cost_.duration_, {"d": action_.events_.nominal_.duration_})
-        lost_cost = eval(risk_.lost_cost_.cost_, {"c": action_.events_.nominal_.cost_})
-        return Cost(lost_duration, lost_cost)
+        self.stochastic_mode = enabled_

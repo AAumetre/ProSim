@@ -34,7 +34,7 @@ class Events:
     risks_: List[Risk]
 
 
-@dataclass()
 class Resource:
-    type_: str
-    qty_: int
+    def __init__(self, type_: str, properties_: Dict[str, str | int | float] = {}):
+        self.type_ = type_
+        self.properties_ = properties_

@@ -1,0 +1,7 @@
+{
+  "type": "Cook",
+  "properties": {
+    "name": "Brandon",
+    "experience": 1.2
+  }
+}
