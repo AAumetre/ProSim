@@ -1,7 +1,0 @@
-{
-  "weighted_edges": [
-    {"from": "start", "to": "task1",  "p": 1.0},
-    {"from": "task1", "to": "task2",  "p": 1.0},
-    {"from": "task2", "to": "end",    "p": 1.0}
-  ]
-}
