@@ -7,5 +7,13 @@
     {"name": "risk1", "normal": [2.0, 0.1], "layer": 1},
     {"name": "risk2", "normal": [3.0, 0.1], "layer": 1},
     {"name": "end",   "normal": [1.0, 0.1], "layer": 2}
+  ],
+  "weighted_edges": [
+    {"from": "start", "to": "nom1",  "p": 0.7},
+    {"from": "start", "to": "risk1", "p": 0.2},
+    {"from": "start", "to": "risk2", "p": 0.1},
+    {"from": "nom1",  "to": "end",  "p": 1.0},
+    {"from": "risk1", "to": "end",  "p": 1.0},
+    {"from": "risk2", "to": "end",  "p": 1.0}
   ]
 }

@@ -47,8 +47,8 @@ def sum_discrete_functions(f1_: DiscreteFunction1D, f2_: DiscreteFunction1D, dx_
     in_f1 = lambda n: (f1_[0][0] <= n <= f1_[0][-1])
     in_f2 = lambda n: (f2_[0][0] <= n <= f2_[0][-1])
     min_x, max_x = min(f1_[0][0], f2_[0][0]), max(f1_[0][-1], f2_[0][-1])
-    offset_f1 = (int((f1_[0][0] - min_x) / dx_) if f1_[0][0] > min_x else 0)
-    offset_f2 = (int((f2_[0][0] - min_x) / dx_) if f2_[0][0] > min_x else 0)
+    offset_f1 = (int((f1_[0][0] - min_x) / dx_) + 1 if f1_[0][0] > min_x else 0)
+    offset_f2 = (int((f2_[0][0] - min_x) / dx_) + 1 if f2_[0][0] > min_x else 0)
     new_xs = [min_x + i * dx_ for i in range(int((max_x - min_x) / dx_))]
     new_ys = [0] * len(new_xs)
     for i, x in enumerate(new_xs):
@@ -80,20 +80,16 @@ def compute_variance(f_: DiscreteFunction1D, esp_: float) -> float:
 
 
 def load_graph_json(path_: str):
-    """ Load TasksDefinition.json and FlowDefinition.json and return all the necessary objets. """
-    # TODO: might be actually a lot simpler to put everything in a single file
-    starting_node, ending_node, nodes = None, None, {}
+    """ Load RiskAlternative.json and FlowDefinition.json and return all the necessary objets. """
+    starting_node, ending_node, nodes, edges = None, None, {}, []
     # read tasks definitions
-    with open(path_ + "/TasksDefinition.json") as f:
+    with open(path_) as f:
         data = json.load(f)
         for t in data["tasks"]:
             nodes[t["name"]] = Task(t["name"], (t["normal"][0], t["normal"][1]), t["layer"])
         starting_node = nodes[data["starting_task"]]
         ending_node = nodes[data["ending_task"]]
-    edges = []
-    # read edges definition
-    with open(path_ + "/FlowDefinition.json") as f:
-        data = json.load(f)
+        # read edges definition
         for e in data["weighted_edges"]:
             edges.append((nodes[e["from"]], nodes[e["to"]], e["p"]))
     # create the graph
@@ -112,7 +108,7 @@ def main():
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/LowRiskProcess")
+    start_node, end_node, g = load_graph_json("Examples/LowRisk.json")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
@@ -146,7 +142,7 @@ def main():
     mp.title("Process cost probability")
     ax1.grid()
     ax2.grid()
-    # mp.show()
+    mp.show()
 
     # print out some metadata
     integral = sum(mixed[1])*0.01
