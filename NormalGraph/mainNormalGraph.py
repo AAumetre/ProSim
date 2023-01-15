@@ -1,9 +1,11 @@
 import json
+import time
 
 import matplotlib.pyplot as mp
 from typing import *
 import scipy as scipy
 
+from NormalGraph.GraphMonteCarlo import MonteCarlo
 from NormalMixedLaw import NormalMixedLaw
 from Task import Task
 import networkx as nx
@@ -71,7 +73,7 @@ def load_graph_json(path_: str):
             edges.append((nodes[e["from"]], nodes[e["to"]], e["p"]))
     # create the graph
     graph = nx.DiGraph()
-    for node in nodes.values():
+    for name, node in nodes.items():
         graph.add_node(node, layer=node.layer_)
     graph.add_weighted_edges_from(edges)
     return starting_node, graph
@@ -87,6 +89,10 @@ def main():
     # Define a graph describing the process, starting with the tasks
     start_node, g = load_graph_json("Examples/LowRiskStraightProcess")
 
+    # do a Monte-Carlo simulation
+    solver = MonteCarlo(g, start_node)
+    mc_sample = solver.compute_sample(10000)
+
     # draw the graph
     options = {"node_size": 3000, "font_color": "white", "arrowsize": 20}
     positioning = nx.multipartite_layout(g, subset_key="layer")
@@ -96,7 +102,7 @@ def main():
 
     # browse the graph and build the mixed probability law
     mixed = build_mixed_law(g, start_node)
-    definition = (10.0, 16.0)  # manually defined-
+    definition = (10.0, 16.0)  # manually defined, see TODOs
     mixed_phi = mixed.get_function()
     integral, error = scipy.integrate.quad(mixed_phi, *definition)
     mass_f = build_integral_function(lambda x: mixed_phi(x) / integral, definition)
@@ -106,7 +112,8 @@ def main():
     color = 'tab:green'
     ax1.set_xlabel("Duration [h]")
     ax1.set_ylabel("Density function", color=color)
-    ax1.plot(*sample_function(mixed_phi, definition, samples_=1000), color=color)
+    ax1.plot(*sample_function(lambda x: 420*mixed_phi(x)/6.5, definition, samples_=1000), color=color)
+    ax1.hist(mc_sample, bins=100)
     ax1.tick_params(axis='y', labelcolor=color)
     ax2 = ax1.twinx()
     color = 'tab:red'
@@ -121,10 +128,12 @@ def main():
     expected = compute_esperance(mixed_phi, definition)/integral
     print(f"Esperance: {expected:.2f} hours.")
     variance = compute_variance(mixed_phi, expected, definition)/integral
-    print(f"Variance: {variance:.2f}")
-    mass_f_ninety = lambda x: mass_f(x) - 0.9
-    ninety = scipy.optimize.fsolve(mass_f_ninety, [expected])  # start at the esperance value
-    print(f"Maximum duration, with 90% probability: {ninety[0]:.2f} hours.")
+    print(f"Variance: {variance:.2f}.")
+    ninety = scipy.optimize.fsolve(lambda x: mass_f(x) - 0.9, [expected])  # start at the esperance value
+    print(f"Maximum duration, with 90% confidence: {ninety[0]:.2f} hours.")
 
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    start_time = time.time_ns()
+    main()
+    print(f"Duration: {(time.time_ns() - start_time) / 10 ** 9} s")
