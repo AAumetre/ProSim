@@ -108,11 +108,12 @@ def main():
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/LowRisk.json")
+    start_node, end_node, g = load_graph_json("Examples/ModelDevelopment.json")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    mc_sample = solver.compute_sample(10000, True)
+    n_mc_samples = 10000
+    mc_sample = solver.compute_sample(n_mc_samples, True)
 
     # draw the graph
     options = {"node_size": 3000, "font_color": "white", "arrowsize": 20}
@@ -124,14 +125,15 @@ def main():
     # browse the graph and build the mixed probability law
     mixed = build_mixed_law(g, start_node, end_node)
     mass_function = scipy.integrate.cumulative_trapezoid(mixed[1], mixed[0])
-    mixed = mixed[0], [320 * y for y in mixed[1]]  # scale up
 
     # plot density and mass functions
     fig, ax1 = mp.subplots()
     color = 'tab:green'
     ax1.set_xlabel("Cost [h]")
     ax1.set_ylabel("Density function", color=color)
-    ax1.hist(mc_sample, bins=100)
+    n_bins, _, _ = ax1.hist(mc_sample, bins=n_mc_samples//50)
+    # scale up the mixed law for comparison with Monte Carlo hist
+    mixed = mixed[0], [max(n_bins) * y / max(mixed[1]) * 1.05 for y in mixed[1]]
     ax1.plot(mixed[0], mixed[1], color=color)
     ax1.tick_params(axis='y', labelcolor=color)
     ax2 = ax1.twinx()
