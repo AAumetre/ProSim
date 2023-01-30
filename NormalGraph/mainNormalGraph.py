@@ -44,8 +44,8 @@ def build_mixed_law(graph_: DiGraph, start_: NodeType, end_: NodeType) -> Discre
 
 def sum_discrete_functions(f1_: DiscreteFunction1D, f2_: DiscreteFunction1D, dx_: float) -> DiscreteFunction1D:
     # build new range that covers the whole definition set
-    in_f1 = lambda n: (f1_[0][0] <= n <= f1_[0][-1])
-    in_f2 = lambda n: (f2_[0][0] <= n <= f2_[0][-1])
+    def in_f1(n): return f1_[0][0] <= n <= f1_[0][-1]
+    def in_f2(n): return f2_[0][0] <= n <= f2_[0][-1]
     min_x, max_x = min(f1_[0][0], f2_[0][0]), max(f1_[0][-1], f2_[0][-1])
     offset_f1 = (int((f1_[0][0] - min_x) / dx_) + 1 if f1_[0][0] > min_x else 0)
     offset_f2 = (int((f2_[0][0] - min_x) / dx_) + 1 if f2_[0][0] > min_x else 0)
@@ -61,8 +61,8 @@ def sum_discrete_functions(f1_: DiscreteFunction1D, f2_: DiscreteFunction1D, dx_
     return new_xs, new_ys
 
 
-def compute_esperance(f_: DiscreteFunction1D) -> float:
-    """ Computes the esperance of X, where f_ is the probability density function. """
+def compute_expectation(f_: DiscreteFunction1D) -> float:
+    """ Computes the expectation of X, where f_ is the probability density function. """
     fv = copy.deepcopy(f_[1])
     for i, v in enumerate(fv):
         fv[i] = v*f_[0][i]
@@ -105,10 +105,12 @@ def main():
     # TODO: check out Markov chains, might be a bit restrictive
     # TODO: set-up automatic testing
     # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
+    # TODO: distributions with a mean close to 0.0 (<1.0) seem to cause discrepancies. It looks like the negative
+    #       durations - albeit not making much sense - are not taken into account in the mixed law.
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/ModelDevelopment.json")
+    start_node, end_node, g = load_graph_json("Examples/RiskAlternative.json")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
@@ -148,8 +150,8 @@ def main():
 
     # print out some metadata
     integral = sum(mixed[1])*0.01
-    expected = compute_esperance(mixed) / integral
-    print(f"Esperance: {expected:.2f} hours.")
+    expected = compute_expectation(mixed) / integral
+    print(f"Expectation: {expected:.2f} hours.")
     variance = compute_variance(mixed, expected) / integral
     print(f"Variance: {variance:.2f}.")
 
