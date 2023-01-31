@@ -1,3 +1,4 @@
+import logging
 import math
 from typing import *
 import scipy
@@ -26,11 +27,12 @@ class NormalMixedLaw:
         new_density = self.build_distribution(distributions_)
         # sample the new density function
         _, new_samples = sample_function(new_density, new_def, self.phi_dx_)
-        # zero-pad phi to match the new size
-        zeros_left = [0.0] * int(abs(self.phi_def_[0] - new_def[0]) / self.phi_dx_)
-        zeros_right = [0.0] * int(abs(self.phi_def_[1] - new_def[1]) / self.phi_dx_)
         # update phi with a discrete convolution product
-        self.phi_ = list(scipy.signal.convolve(zeros_left + self.phi_ + zeros_right, new_samples) / sum(self.phi_))
+        if sum(self.phi_) > 0.0:
+            self.phi_ = list(scipy.signal.convolve(self.phi_, new_samples) / sum(self.phi_))
+        else:
+            logging.error(f"The density function has been sampled to all zeroes, dx(={self.phi_dx_}) is too large.")
+            exit(1)
         self.phi_def_ = new_def
         self.clean_up_phi()
 
@@ -71,7 +73,7 @@ def normal_dist(x_: float, m_: float, s_: float) -> float:
     return (1 / (s_ * math.sqrt(2 * math.pi))) * math.exp(-0.5 * ((x_ - m_) / s_) ** 2)
 
 
-def sample_function(f_: Function1D, def_: Tuple[float, float], dx_: float = 0.01) -> Tuple[List[float], List[float]]:
+def sample_function(f_: Function1D, def_: Tuple[float, float], dx_: float) -> Tuple[List[float], List[float]]:
     """ Compute the [y], y=f_(x) arrays. """
     min_x, max_x = def_[0], def_[1]
     n_samples = int((max_x - min_x) / dx_)

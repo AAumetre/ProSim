@@ -1,0 +1,36 @@
+{
+  "starting_task": "start",
+  "ending_task": "end",
+  "tasks": [
+    {"name": "start", "normal": [0.0, 1e-8],   "layer": 0},
+    {"name": "task1", "normal": [10.0, 0.1],  "layer": 1},
+    {"name": "nom1",  "normal": [1.0, 0.1],   "layer": 2},
+    {"name": "task3", "normal": [0.1, 0.00006],  "layer": 3},
+    {"name": "opt1",  "normal": [1.2, 0.02],  "layer": 4},
+    {"name": "opt2",  "normal": [0.1, 0.0004],  "layer": 4},
+    {"name": "risk1", "normal": [1.5, 0.1],   "layer": 2},
+    {"name": "risk2", "normal": [2.0, 0.01],  "layer": 2},
+    {"name": "task2", "normal": [0.5, 0.0001],   "layer": 3},
+    {"name": "nom2",  "normal": [1.0, 0.1],   "layer": 4},
+    {"name": "risk3", "normal": [2.0, 0.08],  "layer": 4},
+    {"name": "end",   "normal": [1.0, 0.02],  "layer": 5}
+  ],
+  "weighted_edges": [
+    {"from": "start", "to": "task1",  "p": 1.0},
+    {"from": "nom1",  "to": "task2",  "p": 0.9},
+    {"from": "nom1",  "to": "task3",  "p": 0.1},
+    {"from": "task3", "to": "opt1",   "p": 0.6},
+    {"from": "task3", "to": "opt2",   "p": 0.4},
+    {"from": "opt1",  "to": "end",    "p": 1.0},
+    {"from": "opt2",  "to": "end",    "p": 1.0},
+    {"from": "nom2",  "to": "end",    "p": 1.0},
+    {"from": "risk3", "to": "end",    "p": 1.0},
+    {"from": "risk1", "to": "task2",  "p": 1.0},
+    {"from": "risk2", "to": "task2",  "p": 1.0},
+    {"from": "task2", "to": "nom2",   "p": 0.9},
+    {"from": "task1", "to": "nom1",   "p": 0.7},
+    {"from": "task1", "to": "risk1",  "p": 0.2},
+    {"from": "task1", "to": "risk2",  "p": 0.1},
+    {"from": "task2", "to": "risk3",  "p": 0.1}
+  ]
+}

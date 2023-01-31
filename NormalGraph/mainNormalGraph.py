@@ -17,13 +17,13 @@ Function1D = Callable[[float], float]
 DiscreteFunction1D = Tuple[List[float], List[float]]
 
 
-def build_mixed_law(graph_: DiGraph, start_: NodeType, end_: NodeType) -> DiscreteFunction1D:
+def build_mixed_law(graph_: DiGraph, start_: NodeType, end_: NodeType, dx_: float) -> DiscreteFunction1D:
     """ Uses a NetworkX graph to build a mixed probability distribution law. """
     laws = []
     # explore the graph and build a law on each path
     paths = nx.all_simple_paths(graph_, start_, end_)
     for path in paths:
-        mixed = NormalMixedLaw(0.01)  # initialise the mixed law
+        mixed = NormalMixedLaw(dx_)  # initialise the mixed law
         law_p = 1.0
         for u, v in itertools.pairwise(path):
             p = graph_[u][v]["weight"]
@@ -34,11 +34,10 @@ def build_mixed_law(graph_: DiGraph, start_: NodeType, end_: NodeType) -> Discre
     # sum all the laws together
     mixed_x, mixed_y = laws[0][1].get_sampling()  # starts at zero
     mixed_y = [y * laws[0][0] for y in mixed_y]
-    dx = laws[0][1].phi_dx_
     for law in laws[1:]:  # TODO: can be optimized
         other_x, other_y = law[1].get_sampling()
         other_y = [y * law[0] for y in other_y]
-        mixed_x, mixed_y = sum_discrete_functions((mixed_x, mixed_y), (other_x, other_y), dx)
+        mixed_x, mixed_y = sum_discrete_functions((mixed_x, mixed_y), (other_x, other_y), dx_)
     return mixed_x, mixed_y
 
 
@@ -102,6 +101,7 @@ def load_graph_json(path_: str):
 
 def main():
     # TODO: in JSON files, have a different way to define sigma, other than giving its value
+    # TODO: handle zero-variance durations better than having s->1/inf (which causes discretization issues)
     # TODO: check out Markov chains, might be a bit restrictive
     # TODO: set-up automatic testing
     # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
@@ -114,7 +114,7 @@ def main():
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    n_mc_samples = 10000
+    n_mc_samples = 10_000
     mc_sample = solver.compute_sample(n_mc_samples, True)
 
     # draw the graph
@@ -125,7 +125,8 @@ def main():
     nx.draw_networkx_edge_labels(g, positioning, edge_labels)  # shown later
 
     # browse the graph and build the mixed probability law
-    mixed = build_mixed_law(g, start_node, end_node)
+    dx = 0.01
+    mixed = build_mixed_law(g, start_node, end_node, dx)
     mass_function = scipy.integrate.cumulative_trapezoid(mixed[1], mixed[0])
 
     # plot density and mass functions
@@ -133,15 +134,18 @@ def main():
     color = 'tab:green'
     ax1.set_xlabel("Cost [h]")
     ax1.set_ylabel("Density function", color=color)
-    n_bins, _, _ = ax1.hist(mc_sample, bins=n_mc_samples//50)
     # scale up the mixed law for comparison with Monte Carlo hist
-    mixed = mixed[0], [max(n_bins) * y / max(mixed[1]) * 1.05 for y in mixed[1]]
+    n_bins, mc_intervals, _2 = ax1.hist(mc_sample, bins=n_mc_samples//20)
+    mixed = mixed[0], [max(n_bins) * y for y in mixed[1]]
     ax1.plot(mixed[0], mixed[1], color=color)
     ax1.tick_params(axis='y', labelcolor=color)
     ax2 = ax1.twinx()
     color = 'tab:red'
     ax2.set_ylabel("Mass function", color=color)
     ax2.plot(mixed[0][:-1], mass_function, color=color)
+    mass_carlo = scipy.integrate.cumulative_trapezoid(n_bins, mc_intervals[:-1])
+    mass_carlo = [v/max(mass_carlo) for v in mass_carlo]  # normalize mass function
+    ax2.plot(mc_intervals[:-2], mass_carlo, "--")
     ax2.tick_params(axis='y', labelcolor=color)
     mp.title("Process cost probability")
     ax1.grid()
@@ -149,7 +153,7 @@ def main():
     mp.show()
 
     # print out some metadata
-    integral = sum(mixed[1])*0.01
+    integral = sum(mixed[1])*dx
     expected = compute_expectation(mixed) / integral
     print(f"Expectation: {expected:.2f} hours.")
     variance = compute_variance(mixed, expected) / integral
