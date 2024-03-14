@@ -100,7 +100,8 @@ def load_graph_json(path_: str):
 
 
 def main():
-    # TODO: in JSON files, have a different way to define sigma, other than giving its value
+    # TODO: in JSON files, have a different way to define sigma, other than giving its value, use this:
+    #       https://en.wikipedia.org/wiki/Three-point_estimation
     # TODO: handle zero-variance durations better than having s->1/inf (which causes discretization issues)
     # TODO: check out Markov chains, might be a bit restrictive
     # TODO: set-up automatic testing
