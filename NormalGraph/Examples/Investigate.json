@@ -1,0 +1,14 @@
+{
+  "starting_task": "start",
+  "ending_task": "end",
+  "tasks": [
+    {"name": "start", "normal": [0.0, 1e-6], "layer": 0},
+    {"name": "2", "normal": [8.0, 1.8], "layer": 1},
+    {"name": "end", "normal": [10.0, 0.2], "layer": 1}
+  ],
+  "weighted_edges": [
+    {"from": "start", "to": "end", "p": 0.8},
+    {"from": "start", "to": "2", "p": 0.2},
+    {"from": "2", "to": "end", "p": 1.0}
+  ]
+}
