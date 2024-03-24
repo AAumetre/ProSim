@@ -9,7 +9,7 @@
       "cost":  {"fixed": 2.0}
     }},
     {"name": "risk1",  "layer": 1, "side_effects": {
-      "cost":  {"fixed": 10.0, "normal": [0.0, 0.008]}
+      "cost":  {"fixed": 10.0, "normal": [0.0, 0.8]}
     }},
     {"name": "end",   "layer": 2, "side_effects": {
       "cost": {"fixed": 1.0}

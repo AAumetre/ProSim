@@ -4,6 +4,7 @@ import logging
 import time
 from collections import defaultdict
 
+import matplotlib.pyplot
 import matplotlib.pyplot as mp
 from typing import *
 
@@ -70,7 +71,7 @@ def main():
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/SimpleOneRiskComplexEffect.json")
+    start_node, end_node, g = load_graph_json("Examples/SimpleOneRisk.json")
     # find all the declared side effects data types
     declared_data_types = set()
     for n in g.nodes:
@@ -96,10 +97,12 @@ def main():
 
     # draw the process graph
     options = {"node_size": 3000, "font_color": "black", "arrowsize": 20}
+    # use the layer information to do the drawing
     positioning = nx.multipartite_layout(g, subset_key="layer")
+    # positioning = nx.spring_layout(g, seed = 5)  # automatic positioning
     nx.draw_networkx(g, pos=positioning, with_labels=True, font_weight='bold', **options)
     edge_labels = nx.get_edge_attributes(g, "weight")
-    nx.draw_networkx_edge_labels(g, positioning, edge_labels)  # shown later
+    nx.draw_networkx_edge_labels(g, positioning, edge_labels, label_pos=0.8)  # shown later
 
     # print all the samples' statistics
     for sample_type, sample in samples_sublists.items():
@@ -112,8 +115,6 @@ def main():
     print(f"Expectation: {expected:.2f}.")
     variance = numpy.var(cost_samples)
     print(f"Variance: {variance:.2f}.")
-
-    # print(scipy.integrate.cumulative_trapezoid(samples_sublists["cost"], dx=1.0/n_mc_samples)[-1])
 
 
 if __name__ == '__main__':

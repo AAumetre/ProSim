@@ -1,0 +1,49 @@
+{
+  "starting_event": "Need new version",
+  "ending_event": "Delivery",
+  "events": [
+    {"name": "Need new version", "layer": 0, "side_effects": {}},
+    {"name": "Integration non-regression testing on a single OS",  "layer": 1, "side_effects": {
+      "cost":  {"fixed": 3.0},
+      "delay": {"fixed":  2.0}
+    }},
+    {"name": "Support from Core Components team",  "layer": 1, "side_effects": {
+      "cost":  {"fixed": 80.0},
+      "delay": {"fixed":  21.0}
+    }},
+    {"name": "Manual deployment and non-regression testing on target OS",  "layer": 2, "side_effects": {
+      "cost":  {"fixed": 3.0},
+      "delay": {"fixed":  1.0}
+    }},
+    {"name": "Update MultiOS bundle & forge",  "layer": 2, "side_effects": {
+    "cost":  {"fixed": 40.0},
+    "delay": {"fixed":  7.0}
+    }},
+    {"name": "Need additional effort to fit in existing bundle",  "layer": 2, "side_effects": {
+    "cost":  {"three-points": [120.0, 250.0, 600.0]},
+    "delay":  {"three-points": [21.0, 56.0, 140.0]}
+    }},
+    {"name": "Create a new MultiOS bundle",  "layer": 2, "side_effects": {
+    "cost":  {"three-points": [250.0, 600.0, 1000.0]},
+    "delay":  {"three-points": [90.0, 180.0, 360.0]}
+    }},
+    {"name": "Validation on the new OS",  "layer": 3, "side_effects": {
+      "cost":  {"three-points": [3.0, 40.0, 160.0]},
+      "delay": {"fixed":  30.0}
+    }},
+    {"name": "Delivery",   "layer": 4, "side_effects": {}}
+  ],
+  "weighted_edges": [
+    {"from": "Need new version", "to": "Integration non-regression testing on a single OS",  "p": 0.975},
+    {"from": "Need new version", "to": "Support from Core Components team", "p": 0.025},
+    {"from": "Support from Core Components team", "to": "Update MultiOS bundle & forge", "p": 0.7},
+    {"from": "Update MultiOS bundle & forge", "to": "Validation on the new OS", "p": 1.0},
+    {"from": "Support from Core Components team", "to": "Need additional effort to fit in existing bundle", "p": 0.15},
+    {"from": "Need additional effort to fit in existing bundle", "to": "Update MultiOS bundle & forge", "p": 1.0},
+    {"from": "Support from Core Components team", "to": "Create a new MultiOS bundle", "p": 0.15},
+    {"from": "Create a new MultiOS bundle", "to": "Validation on the new OS", "p": 1.0},
+    {"from": "Integration non-regression testing on a single OS", "to": "Manual deployment and non-regression testing on target OS", "p": 1.0},
+    {"from": "Manual deployment and non-regression testing on target OS", "to":  "Delivery", "p": 1.0},
+    {"from": "Validation on the new OS", "to": "Delivery",  "p": 1.0}
+  ]
+}

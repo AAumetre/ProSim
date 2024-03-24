@@ -1,0 +1,32 @@
+{
+  "starting_event": "Need new version",
+  "ending_event": "Delivery",
+  "events": [
+    {"name": "Need new version", "layer": 0, "side_effects": {}},
+    {"name": "Integration non-regression testing on a single OS",  "layer": 1, "side_effects": {
+      "cost":  {"fixed": 3.0},
+      "delay": {"fixed":  2.0}
+    }},
+    {"name": "Support from Core Components team",  "layer": 1, "side_effects": {
+      "cost":  {"three-points": [50.0, 600.0, 1000.0]},
+      "delay": {"three-points":  [90.0, 180.0, 360.0]}
+    }},
+    {"name": "Manual deployment and non-regression testing on 3 target OS",  "layer": 2, "side_effects": {
+      "cost":  {"fixed": 9.0},
+      "delay": {"fixed":  2.0}
+    }},
+    {"name": "Validation on the new OS",  "layer": 2, "side_effects": {
+      "cost":  {"three-points": [3.0, 40.0, 160.0]},
+      "delay": {"fixed":  30.0}
+    }},
+    {"name": "Delivery",   "layer": 3, "side_effects": {}}
+  ],
+  "weighted_edges": [
+    {"from": "Need new version", "to": "Integration non-regression testing on a single OS",  "p": 0.975},
+    {"from": "Need new version", "to": "Support from Core Components team", "p": 0.025},
+    {"from": "Integration non-regression testing on a single OS", "to": "Manual deployment and non-regression testing on 3 target OS", "p": 1.0},
+    {"from": "Support from Core Components team",  "to": "Validation on the new OS",  "p": 1.0},
+    {"from": "Manual deployment and non-regression testing on 3 target OS", "to": "Delivery", "p": 1.0},
+    {"from": "Validation on the new OS", "to": "Delivery",  "p": 1.0}
+  ]
+}
