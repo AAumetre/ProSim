@@ -4,7 +4,7 @@ from numpy import random
 
 class Action:
 
-    def __init__(self, name_: str, inputs_: List[ItemCount], outputs: List[ItemCount],
+    def __init__(self, inputs_: List[ItemCount], outputs: List[ItemCount],
                  resources_: List[Resource], events_: Events,
                  duration_variability_: str, cost_variability_: str):
         self.name_: str = name_

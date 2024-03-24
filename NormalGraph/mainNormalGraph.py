@@ -1,6 +1,7 @@
 import copy
 import itertools
 import json
+import math
 import time
 
 import matplotlib.pyplot as mp
@@ -10,8 +11,9 @@ import numpy
 import scipy as scipy
 from networkx import DiGraph
 
-from NormalGraph.GraphMonteCarlo import MonteCarlo, NodeType
-from Task import Task
+
+from NormalGraph.GraphMonteCarlo import MonteCarlo
+from Event import EventFactory
 import networkx as nx
 
 Function1D = Callable[[float], float]
@@ -46,6 +48,21 @@ def compute_expectation(f_: DiscreteFunction1D) -> float:
     return max(integral)
 
 
+def normal_dist(x_: float, m_: float, s_: float) -> float:
+    return (1 / (s_ * math.sqrt(2 * math.pi))) * math.exp(-0.5 * ((x_ - m_) / s_) ** 2)
+
+
+def sample_function(f_: Function1D, def_: Tuple[float, float], dx_: float) -> Tuple[List[float], List[float]]:
+    """ Compute the [y], y=f_(x) arrays. """
+    min_x, max_x = def_[0], def_[1]
+    n_samples = int((max_x - min_x) / dx_)
+    xs, ys = [0.0] * n_samples, [0.0] * n_samples
+    for i in range(n_samples):
+        xs[i] = min_x + i * dx_
+        ys[i] = f_(xs[i])
+    return xs, ys
+
+
 def compute_variance(f_: DiscreteFunction1D, esp_: float) -> float:
     """ Computes the variance (sigma-squared) of X, where f_ is the probability density function. """
     fv = copy.deepcopy(f_[1])
@@ -61,21 +78,12 @@ def load_graph_json(path_: str):
     # read tasks definitions
     with open(path_) as f:
         data = json.load(f)
-        for t in data["tasks"]:
-            # two possibilities to evaluate the distribution: either "three-points" or "normal"
-            # in both cases, we need to evaluation the expectation and variance
-            if "normal" in t:
-                expectation = t["normal"][0]
-                variance = t["normal"][1]
-            elif "three-points" in t:
-                tp = sorted(t["three-points"])
-                expectation = (tp[0] + 4*tp[1] + tp[2])/6.0
-                variance = max((tp[2] - tp[0]) / 6.0, 1e-6)
-            else:
-                print(f"Invalid line in file, cannot process task {t}")
-            nodes[t["name"]] = Task(t["name"], (expectation, variance), t["layer"])
-        starting_node = nodes[data["starting_task"]]
-        ending_node = nodes[data["ending_task"]]
+        event_factory = EventFactory()
+        for e in data["events"]:
+            event = event_factory.create_event(e)
+            nodes[event.name_] = event
+        starting_node = nodes[data["starting_event"]]
+        ending_node = nodes[data["ending_event"]]
         # read edges definition
         for e in data["weighted_edges"]:
             edges.append((nodes[e["from"]], nodes[e["to"]], e["p"]))
@@ -99,12 +107,16 @@ def main():
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/SimpleRiskThreePoints.json")
+    start_node, end_node, g = load_graph_json("Examples/SimpleTwoRisk.json")
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
     n_mc_samples = 10_000
-    mc_sample = solver.compute_sample(n_mc_samples, True)
+    mc_samples = solver.compute_samples(n_mc_samples)
+
+    mc_sample = []
+    for s in mc_samples:
+        mc_sample.append(s["cost"])
 
     # draw the graph
     options = {"node_size": 3000, "font_color": "black", "arrowsize": 20}

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import *
 from numpy import random
 from networkx import DiGraph
@@ -14,13 +15,6 @@ def choose_successor(successors_: Dict) -> NodeType:
     return random.choice(names, p=probabilities)
 
 
-def get_node_value(node_: NodeType, random_on_nodes_: bool):
-    if not random_on_nodes_:
-        return node_.normal_[0]  # mean value
-    else:
-        return random.normal(*node_.normal_)
-
-
 class MonteCarlo:
 
     def __init__(self, graph_: DiGraph, start_node_: NodeType, seed_: int = 666):
@@ -29,20 +23,17 @@ class MonteCarlo:
         self.seed_ = seed_
         self.gen_ = random.default_rng(seed_)
 
-    def compute_sample(self, size_: int, random_on_nodes_: bool = True) -> List[float]:
-        samples = [0.0] * size_
-        for i in range(size_):
-            samples[i] = self.run_round(random_on_nodes_)
+    def compute_samples(self, sample_size_: int) -> Dict[str, float]:
+        samples = []
+        # run through the graph
+        for i in range(sample_size_):
+            samples.append(defaultdict(float))
+            current_node = self.start_node_
+            while True:
+                successors = self.graph_.succ[current_node]
+                if not successors:
+                    break
+                current_node = choose_successor(successors)
+                for effect_type, effect_value in current_node.trigger_event().items():
+                    samples[i][effect_type] += effect_value
         return samples
-
-    def run_round(self, random_on_nodes_: bool = True) -> float:
-        """ Run through the graph once, taking into account random variables or not. """
-        current_node = self.start_node_
-        total = get_node_value(current_node, random_on_nodes_)
-        while True:
-            successors = self.graph_.succ[current_node]
-            if not successors:
-                break
-            current_node = choose_successor(successors)
-            total += get_node_value(current_node, random_on_nodes_)
-        return total
