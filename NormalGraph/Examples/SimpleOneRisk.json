@@ -10,11 +10,8 @@
     }},
     {"name": "risk1",  "layer": 1, "side_effects": {
       "cost":  {"normal": [1.0, 0.2]},
-      "delay": {"fixed":  4.0}
-    }},
-    {"name": "risk2",  "layer": 1, "side_effects": {
-      "cost":  {"three-points": [3.5, 4.0, 5.0]},
-      "delay": {"fixed":  10.0}
+      "delay": {"three-points":  [3.5, 4.0, 4.2]},
+      "euros": {"fixed":  100.0}
     }},
     {"name": "end",   "layer": 2, "side_effects": {
       "cost": {"fixed": 1.0},
@@ -22,11 +19,9 @@
     }}
   ],
   "weighted_edges": [
-    {"from": "start", "to": "nom1",  "p": 0.7},
+    {"from": "start", "to": "nom1",  "p": 0.8},
     {"from": "start", "to": "risk1", "p": 0.2},
-    {"from": "start", "to": "risk2", "p": 0.1},
     {"from": "nom1",  "to": "end",  "p": 1.0},
-    {"from": "risk1", "to": "start", "p": 1.0},
-    {"from": "risk2", "to": "end",  "p": 1.0}
+    {"from": "risk1", "to": "start", "p": 1.0}
   ]
 }

@@ -27,13 +27,21 @@ class MonteCarlo:
         samples = []
         # run through the graph
         for i in range(sample_size_):
-            samples.append(defaultdict(float))
-            current_node = self.start_node_
-            while True:
-                successors = self.graph_.succ[current_node]
-                if not successors:
-                    break
-                current_node = choose_successor(successors)
-                for effect_type, effect_value in current_node.trigger_event().items():
-                    samples[i][effect_type] += effect_value
+            samples.append(self.run_round())
         return samples
+
+    def run_round(self) -> Dict[str, float]:
+        effects = defaultdict(float)
+        current_node = self.start_node_
+        while True:
+            successors = self.graph_.succ[current_node]
+            if not successors:
+                break
+            current_node = choose_successor(successors)
+            for effect_type, effect_value in current_node.trigger_event().items():
+                effects[effect_type] += effect_value
+        return effects
+
+    def converge_samples(self, threshold_: float = 0.1) -> Tuple[Dict[str, float], int]:
+        """ Computes samples and tries converging on one of the data types. """
+        pass

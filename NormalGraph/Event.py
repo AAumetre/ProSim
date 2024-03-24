@@ -21,6 +21,9 @@ class FixedSideEffect(SideEffect):
         super().__init__(type_)
         self.value_ = value_
 
+    def __repr__(self):
+        return f"{self.type_}, fixed: {self.value_}"
+
     def get_value(self) -> float:
         return self.value_
 
@@ -32,18 +35,26 @@ class NormalSideEffect(SideEffect):
         self.mean_ = mean_
         self.sd_ = sd_
 
+    def __repr__(self):
+        return f"{self.type_}, normal: [{self.mean_}, {self.sd_}]"
+
     def get_value(self) -> float:
         return numpy.random.normal(self.mean_, self.sd_)
 
 class ThreePointsSideEffect(NormalSideEffect):
     """ the ThreePointsSideEffect is a wrapper to the NormalSide =Effect class,
-    using the three-points method to estimate the parameters of a normal distribution. """
+    using the three-points method to estimate the parameters of a normal distribution.
+    https://en.wikipedia.org/wiki/Three-point_estimation """
 
     def __init__(self, type_: str, three_points_: List[float]):
         tp = sorted(list(three_points_))
         mean = (tp[0] + 4 * tp[1] + tp[2]) / 6.0
         sd = math.sqrt(max((tp[2] - tp[0]) / 6.0, 1e-6))
+        self.three_points_ = tp
         super().__init__(type_, mean, sd)
+
+    def __repr__(self):
+        return f"{self.type_}, three-points: {self.three_points_}"
 
 class Event:
     """ An Event is defined by a list of side effects, typically costs and durations. """
@@ -53,7 +64,8 @@ class Event:
         self.side_effects_ = side_effects_
 
     def __repr__(self):
-        return self.name_
+        side_effects_str = ",\n".join(map(str, self.side_effects_))
+        return f"{self.name_}\n{side_effects_str}"
 
     def trigger_event(self) -> Dict[str, float]:
         effect = defaultdict(float)
@@ -79,5 +91,6 @@ class EventFactory:
                 elif se_class == "three-points":
                     side_effects.append(ThreePointsSideEffect(se_type, se_params))
                 else:
-                    logging.error(f"Impossible to create event based on provided record: [{se_type}]: {se_args}")
+                    logging.error(f"Impossible to create event '{event_name}' based on provided record: [{se_type}]: {se_args}")
+                    exit(1)
         return Event(event_name, event_layer, side_effects)
