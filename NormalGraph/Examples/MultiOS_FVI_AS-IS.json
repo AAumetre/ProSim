@@ -1,32 +1,38 @@
 {
-  "starting_event": "Need new version",
-  "ending_event": "Delivery",
+  "starting_event": "0",
+  "ending_event": "6",
   "events": [
-    {"name": "Need new version", "layer": 0, "side_effects": {}},
-    {"name": "Integration non-regression testing on a single OS",  "layer": 1, "side_effects": {
+    {"name": "0", "layer": 0, "side_effects": {}},
+    {"name": "1",  "layer": 1, "side_effects": {
       "cost":  {"fixed": 3.0},
       "delay": {"fixed":  2.0}
     }},
-    {"name": "Support from Core Components team",  "layer": 1, "side_effects": {
+    {"name": "2",  "layer": 1, "side_effects": {
       "cost":  {"three-points": [50.0, 600.0, 1000.0]},
       "delay": {"three-points":  [90.0, 180.0, 360.0]}
     }},
-    {"name": "Manual deployment and non-regression testing on 3 target OS",  "layer": 2, "side_effects": {
-      "cost":  {"fixed": 9.0},
+    {"name": "3",  "layer": 2, "side_effects": {
+      "cost":  {"fixed": 3.0},
+      "delay": {"fixed":  1.0}
+    }},
+    {"name": "4",  "layer": 2, "side_effects": {
+      "cost":  {"fixed": 6.0},
       "delay": {"fixed":  2.0}
     }},
-    {"name": "Validation on the new OS",  "layer": 2, "side_effects": {
+    {"name": "5",  "layer": 2, "side_effects": {
       "cost":  {"three-points": [3.0, 40.0, 160.0]},
       "delay": {"fixed":  30.0}
     }},
-    {"name": "Delivery",   "layer": 3, "side_effects": {}}
+    {"name": "6",   "layer": 3, "side_effects": {}}
   ],
   "weighted_edges": [
-    {"from": "Need new version", "to": "Integration non-regression testing on a single OS",  "p": 0.975},
-    {"from": "Need new version", "to": "Support from Core Components team", "p": 0.025},
-    {"from": "Integration non-regression testing on a single OS", "to": "Manual deployment and non-regression testing on 3 target OS", "p": 1.0},
-    {"from": "Support from Core Components team",  "to": "Validation on the new OS",  "p": 1.0},
-    {"from": "Manual deployment and non-regression testing on 3 target OS", "to": "Delivery", "p": 1.0},
-    {"from": "Validation on the new OS", "to": "Delivery",  "p": 1.0}
+    {"from": "0", "to": "1",  "p": 0.975},
+    {"from": "0", "to": "2", "p": 0.025},
+    {"from": "1", "to": "3", "p": 0.5},
+    {"from": "1", "to": "4", "p": 0.5},
+    {"from": "2",  "to": "5",  "p": 1.0},
+    {"from": "3", "to": "6", "p": 1.0},
+    {"from": "4", "to": "6", "p": 1.0},
+    {"from": "5", "to": "6",  "p": 1.0}
   ]
 }

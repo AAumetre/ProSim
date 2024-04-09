@@ -64,6 +64,12 @@ def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str
     ax1.grid()
     ax2.grid()
 
+def print_simple_stats(name_: str, samples_: List[float]):
+    print(f"First two moments of {name_}")
+    print(f"\t* expectation for {name_}: {numpy.mean(samples_):.2f}.")
+    print(f"\t* variance for {name_}: {numpy.var(samples_):.2f}.")
+    print(f"\t* quantiles for {name_}: {numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])}.")
+
 
 def main():
     # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
@@ -71,7 +77,7 @@ def main():
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/SimpleOneRisk.json")
+    start_node, end_node, g = load_graph_json("Examples/MultiOS_FVI_TO-BE.json")
     # find all the declared side effects data types
     declared_data_types = set()
     for n in g.nodes:
@@ -96,7 +102,7 @@ def main():
                         f"in the samples: {declared_data_types.difference(set(samples_sublists.keys()))}")
 
     # draw the process graph
-    options = {"node_size": 3000, "font_color": "black", "arrowsize": 20}
+    options = {"node_size": 3000, "font_color": "black", "arrowsize": 20, "font_size": 8}
     # use the layer information to do the drawing
     positioning = nx.multipartite_layout(g, subset_key="layer")
     # positioning = nx.spring_layout(g, seed = 5)  # automatic positioning
@@ -110,12 +116,8 @@ def main():
     mp.show()
 
     # print out some metadata
-    cost_samples = samples_sublists["cost"]
-    expected = numpy.mean(cost_samples)
-    print(f"Expectation: {expected:.2f}.")
-    variance = numpy.var(cost_samples)
-    print(f"Variance: {variance:.2f}.")
-
+    for sample_name, sample in samples_sublists.items():
+        print_simple_stats(sample_name, sample)
 
 if __name__ == '__main__':
     start_time = time.time_ns()
