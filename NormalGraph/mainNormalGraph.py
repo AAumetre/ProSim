@@ -1,16 +1,15 @@
-import copy
+#!/usr/bin/env python3
+
 import json
 import logging
 import time
 from collections import defaultdict
 
-import matplotlib.pyplot
 import matplotlib.pyplot as mp
 from typing import *
 
 import numpy
 import scipy as scipy
-
 
 from NormalGraph.GraphMonteCarlo import MonteCarlo
 from Event import EventFactory
@@ -46,26 +45,29 @@ def load_graph_json(path_: str):
 def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str = "") -> None:
     # plot density and mass functions
     fig, ax1 = mp.subplots()
-    color = 'tab:green'
-    ax1.set_xlabel(sample_type_)
+    color = 'tab:blue'
+    ax1.set_xlabel(f"{sample_type_}, {len(sample_)} samples")
     ax1.set_ylabel("Density function", color=color)
-    n_bins, intervals, _2 = ax1.hist(sample_, bins=len(sample_)//20)
-    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.hist(sample_, bins=200, ls="dashed", alpha=0.8)
+    ax1.tick_params(axis="y", labelcolor=color)
+    mp.yscale("log")
     ax2 = ax1.twinx()
     color = 'tab:red'
     ax2.set_ylabel("Mass function", color=color)
-    # compte the mass function
-    mass_function = scipy.integrate.cumulative_trapezoid(n_bins, intervals[:-1])
+    # compute the mass function
+    bins = numpy.histogram(sample_, bins=len(sample_)//10)  # use numpy to binify the samples
+    mass_function = scipy.integrate.cumulative_trapezoid(bins[0], bins[1][:-1])
     # normalize the mass function
     mass_function = [v/max(mass_function) for v in mass_function]
-    ax2.plot(intervals[:-2], mass_function, "--")
-    ax2.tick_params(axis='y', labelcolor=color)
+    mp.yscale("linear")
+    ax2.plot(bins[1][:-2], mass_function, "-", color=color)
+    ax2.tick_params(axis="y", labelcolor=color)
     mp.title(graph_title_)
-    ax1.grid()
-    ax2.grid()
+    mp.xscale("log")
+    mp.grid(axis="both")
 
 def print_simple_stats(name_: str, samples_: List[float]):
-    print(f"First two moments of {name_}")
+    print(f"Basic statistics of {name_}")
     print(f"\t* expectation for {name_}: {numpy.mean(samples_):.2f}.")
     print(f"\t* variance for {name_}: {numpy.var(samples_):.2f}.")
     print(f"\t* quantiles for {name_}: {numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])}.")
@@ -86,7 +88,7 @@ def main():
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    n_mc_samples = 10000
+    n_mc_samples = 10_000
     mc_samples = solver.compute_samples(n_mc_samples)
 
     # create sublists for each sample type that can be found
@@ -102,7 +104,7 @@ def main():
                         f"in the samples: {declared_data_types.difference(set(samples_sublists.keys()))}")
 
     # draw the process graph
-    options = {"node_size": 3000, "font_color": "black", "arrowsize": 20, "font_size": 8}
+    options = {"node_size": 3000, "font_color": "black", "arrowsize": 20, "font_size": 12}
     # use the layer information to do the drawing
     positioning = nx.multipartite_layout(g, subset_key="layer")
     # positioning = nx.spring_layout(g, seed = 5)  # automatic positioning
