@@ -31,6 +31,14 @@
       "cost":  {"three-points": [3.0, 40.0, 160.0]},
       "delay": {"fixed":  30.0}
     }},
+    {"name": "9",  "layer": 3, "side_effects": {
+    "cost":  {"fixed": 40.0},
+    "delay": {"fixed":  7.0}
+    }},
+    {"name": "10",  "layer": 4, "side_effects": {
+    "cost":  {"three-points": [40, 60, 100]},
+    "delay": {"three-points":  [10, 20, 30]}
+    }},
     {"name": "8",   "layer": 4, "side_effects": {}}
   ],
   "weighted_edges": [
@@ -39,11 +47,13 @@
     {"from": "2", "to": "4", "p": 0.7},
     {"from": "4", "to": "7", "p": 1.0},
     {"from": "2", "to": "5", "p": 0.15},
-    {"from": "5", "to": "4", "p": 1.0},
+    {"from": "5", "to": "9", "p": 1.0},
     {"from": "2", "to": "6", "p": 0.15},
-    {"from": "6", "to": "7", "p": 1.0},
+    {"from": "6", "to": "9", "p": 1.0},
     {"from": "1", "to": "3", "p": 1.0},
     {"from": "3", "to":  "8", "p": 1.0},
-    {"from": "7", "to": "8",  "p": 1.0}
+    {"from": "7", "to": "8",  "p": 1.0},
+    {"from": "9", "to": "10",  "p": 1.0},
+    {"from": "10", "to": "7",  "p": 1.0}
   ]
 }

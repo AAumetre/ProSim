@@ -1,0 +1,31 @@
+{
+  "starting_event": "0",
+  "ending_event": "5",
+  "events": [
+    {"name": "0", "layer": 0, "side_effects": {}},
+    {"name": "1",  "layer": 1, "side_effects": {
+      "cost":  {"fixed": 1}
+    }},
+    {"name": "2",  "layer": 2, "side_effects": {
+      "cost":  {"fixed": 4},
+      "delay": {"fixed":  7.0}
+    }},
+    {"name": "3",  "layer": 2, "side_effects": {
+      "delay": {"three-points":  [120.0, 210.0, 390.0]}
+    }},
+    {"name": "4",  "layer": 3, "side_effects": {
+      "cost": {"three-points":  [8, 60, 300]},
+      "delay": {"three-points":  [4.0, 14.0, 80.0]}
+    }},
+    {"name": "5",   "layer": 3, "side_effects": {}}
+  ],
+  "weighted_edges": [
+    {"from": "0", "to": "1",  "p": 1.0},
+    {"from": "1", "to": "2", "p": 0.75},
+    {"from": "1", "to": "3", "p": 0.25},
+    {"from": "3", "to": "4", "p": 0.9},
+    {"from": "3", "to": "2", "p": 0.1},
+    {"from": "4", "to": "2", "p": 1.0},
+    {"from": "2",  "to": "5",  "p": 1.0}
+  ]
+}

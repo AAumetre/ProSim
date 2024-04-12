@@ -10,6 +10,7 @@ from typing import *
 
 import numpy
 import scipy as scipy
+from matplotlib.ticker import MultipleLocator
 
 from NormalGraph.GraphMonteCarlo import MonteCarlo
 from Event import EventFactory
@@ -50,6 +51,7 @@ def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str
     ax1.set_ylabel("Density function", color=color)
     ax1.hist(sample_, bins=200, ls="dashed", alpha=0.8)
     ax1.tick_params(axis="y", labelcolor=color)
+    ax1.grid(which="both", visible=False)
     mp.yscale("log")
     ax2 = ax1.twinx()
     color = 'tab:red'
@@ -60,11 +62,12 @@ def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str
     # normalize the mass function
     mass_function = [v/max(mass_function) for v in mass_function]
     mp.yscale("linear")
+    # ax2.set_ylim([0, 1])  # in the end, not such a great idea
+    ax2.yaxis.set_minor_locator(MultipleLocator(0.1))
     ax2.plot(bins[1][:-2], mass_function, "-", color=color)
     ax2.tick_params(axis="y", labelcolor=color)
     mp.title(graph_title_)
-    mp.xscale("log")
-    mp.grid(axis="both")
+    # mp.xscale("log")
 
 def print_simple_stats(name_: str, samples_: List[float]):
     print(f"Basic statistics of {name_}")
