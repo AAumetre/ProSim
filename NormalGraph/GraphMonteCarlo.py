@@ -1,24 +1,9 @@
+from collections import defaultdict
 from typing import *
 from numpy import random
 from networkx import DiGraph
 
 NodeType = Any
-
-
-def choose_successor(successors_: Dict) -> NodeType:
-    """ Choose a successor, based on a uniform density in [0.0 ; 1.0]. """
-    names, probabilities = [], []
-    for successor, keys in successors_.items():
-        names.append(successor)
-        probabilities.append(keys["weight"])
-    return random.choice(names, p=probabilities)
-
-
-def get_node_value(node_: NodeType, random_on_nodes_: bool):
-    if not random_on_nodes_:
-        return node_.normal_[0]  # mean value
-    else:
-        return random.normal(*node_.normal_)
 
 
 class MonteCarlo:
@@ -29,20 +14,33 @@ class MonteCarlo:
         self.seed_ = seed_
         self.gen_ = random.default_rng(seed_)
 
-    def compute_sample(self, size_: int, random_on_nodes_: bool = True) -> List[float]:
-        samples = [0.0] * size_
-        for i in range(size_):
-            samples[i] = self.run_round(random_on_nodes_)
+    def compute_samples(self, sample_size_: int) -> Dict[str, float]:
+        samples = []
+        # run through the graph
+        for i in range(sample_size_):
+            samples.append(self.run_round())
         return samples
 
-    def run_round(self, random_on_nodes_: bool = True) -> float:
-        """ Run through the graph once, taking into account random variables or not. """
+    def run_round(self) -> Dict[str, float]:
+        effects = defaultdict(float)
         current_node = self.start_node_
-        total = get_node_value(current_node, random_on_nodes_)
         while True:
             successors = self.graph_.succ[current_node]
             if not successors:
                 break
-            current_node = choose_successor(successors)
-            total += get_node_value(current_node, random_on_nodes_)
-        return total
+            current_node = self.choose_successor(successors)
+            for effect_type, effect_value in current_node.trigger_event().items():
+                effects[effect_type] += effect_value
+        return effects
+
+    def converge_samples(self, threshold_: float = 0.1) -> Tuple[Dict[str, float], int]:
+        """ Computes samples and tries converging on one of the data types. """
+        pass
+
+    def choose_successor(self, successors_: Dict) -> NodeType:
+        """ Choose a successor, based on a uniform density in [0.0 ; 1.0]. """
+        names, probabilities = [], []
+        for successor, keys in successors_.items():
+            names.append(successor)
+            probabilities.append(keys["weight"])
+        return random.choice(names, p=probabilities)
