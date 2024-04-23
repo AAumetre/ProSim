@@ -76,7 +76,8 @@ def print_simple_stats(name_: str, samples_: List[float], number_runs_: int):
     print(f"\t* expectation for {name_}: {scale_factor*numpy.mean(samples_):.2f}.")
     print(f"\t* variance for {name_}: {numpy.var(samples_):.2f}.")
     print(f"\t* std deviation for {name_}: {numpy.std(samples_):.2f}.")
-    print(f"\t* quantiles for {name_}: {[x*scale_factor for x in numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])]}.")
+    quantiles = " - ".join([f"{q:.2f}" for q in [x*scale_factor for x in numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])]])
+    print(f"\t* quantiles for {name_}: {quantiles}")
 
 
 def run_monte_carlo_analysis(json_file_path_: str, number_runs_: int, batch_mode_: bool = False) -> None:
