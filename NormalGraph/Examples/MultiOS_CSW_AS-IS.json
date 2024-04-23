@@ -12,8 +12,9 @@
       "delay": {"fixed":  7}
     }},
     {"name": "3",  "layer": 2, "side_effects": {
-      "cost":  {"three-points": [8, 60, 300]},
-      "delay": {"three-points":  [4, 14, 80]}
+      "cost":  {"three-points": [8, 30, 200]},
+      "delay": {"three-points":  [4, 14, 80]},
+      "costFVI": {"three-points":  [0, 30, 100]}
     }},
     {"name": "4",   "layer": 3, "side_effects": {}}
   ],
