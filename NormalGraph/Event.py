@@ -39,22 +39,28 @@ class NormalSideEffect(SideEffect):
         return f"{self.type_}, normal: [{self.mean_}, {self.sd_}]"
 
     def get_value(self) -> float:
-        return numpy.random.normal(self.mean_, self.sd_)
+        val = numpy.random.normal(self.mean_, self.sd_)
+        tries, max_tries = 0, 1000
+        while val < 0.0:
+            val = numpy.random.normal(self.mean_, self.sd_)
+            tries += 1
+            if tries > max_tries:
+                logging.warning(f"Normal side effect ({self.mean_}, {self.sd_}) could not produce a positive value after {max_tries} tries. Using the mean value.")
+                return self.mean_
+        return val
 
-class ThreePointsSideEffect(NormalSideEffect):
-    """ the ThreePointsSideEffect is a wrapper to the NormalSide =Effect class,
-    using the three-points method to estimate the parameters of a normal distribution.
-    https://en.wikipedia.org/wiki/Three-point_estimation """
+class ThreePointsSideEffect(SideEffect):
+    """ the ThreePointsSideEffect is using a triangular distribution, based on min, mean and max estimated values. """
 
     def __init__(self, type_: str, three_points_: List[float]):
-        tp = sorted(list(three_points_))
-        mean = (tp[0] + 4 * tp[1] + tp[2]) / 6.0
-        sd = math.sqrt(max((tp[2] - tp[0]) / 6.0, 1e-6))
-        self.three_points_ = tp
-        super().__init__(type_, mean, sd)
+        super().__init__(type_)
+        self.three_points_ = sorted(list(three_points_))
 
     def __repr__(self):
         return f"{self.type_}, three-points: {self.three_points_}"
+        
+    def get_value(self) -> float:
+        return numpy.random.triangular(*self.three_points_)
 
 class Event:
     """ An Event is defined by a list of side effects, typically costs and durations. """

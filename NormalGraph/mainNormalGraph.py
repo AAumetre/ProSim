@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import os
 import logging
 import time
 from collections import defaultdict
@@ -12,7 +13,7 @@ import numpy
 import scipy as scipy
 from matplotlib.ticker import MultipleLocator
 
-from NormalGraph.GraphMonteCarlo import MonteCarlo
+from GraphMonteCarlo import MonteCarlo
 from Event import EventFactory
 import networkx as nx
 
@@ -43,7 +44,7 @@ def load_graph_json(path_: str):
     return starting_node, ending_node, graph
 
 
-def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str = "") -> None:
+def print_graphs(sample_type_: str, sample_: List[float], graph_title_ : str = "") -> None:
     # plot density and mass functions
     fig, ax1 = mp.subplots()
     color = 'tab:blue'
@@ -67,22 +68,23 @@ def print_statistics(sample_type_: str, sample_: List[float], graph_title_ : str
     ax2.plot(bins[1][:-2], mass_function, "-", color=color)
     ax2.tick_params(axis="y", labelcolor=color)
     mp.title(graph_title_)
-    # mp.xscale("log")
 
-def print_simple_stats(name_: str, samples_: List[float]):
-    print(f"Basic statistics of {name_}")
-    print(f"\t* expectation for {name_}: {numpy.mean(samples_):.2f}.")
+
+def print_simple_stats(name_: str, samples_: List[float], number_runs_: int):
+    scale_factor = len(samples_)/number_runs_
+    print(f"Basic statistics of {name_}, {len(samples_)} samples")
+    print(f"\t* expectation for {name_}: {scale_factor*numpy.mean(samples_):.2f}.")
     print(f"\t* variance for {name_}: {numpy.var(samples_):.2f}.")
-    print(f"\t* quantiles for {name_}: {numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])}.")
+    print(f"\t* std deviation for {name_}: {numpy.std(samples_):.2f}.")
+    print(f"\t* quantiles for {name_}: {[x*scale_factor for x in numpy.quantile(samples_, [0.25, 0.5, 0.75, 1.0])]}.")
 
 
-def main():
-    # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
-    # TODO: compute transition probability sensitivity
+def run_monte_carlo_analysis(json_file_path_: str, number_runs_: int, batch_mode_: bool = False) -> None:
+    json_file_name = json_file_path_.split("/")[-1][:-5]  # split and remove the '.json' part
     mp.style.use("bmh")
 
     # Define a graph describing the process, starting with the tasks
-    start_node, end_node, g = load_graph_json("Examples/MultiOS_FVI_TO-BE.json")
+    start_node, end_node, g = load_graph_json(json_file_path_)
     # find all the declared side effects data types
     declared_data_types = set()
     for n in g.nodes:
@@ -91,8 +93,7 @@ def main():
 
     # do a Monte-Carlo simulation
     solver = MonteCarlo(g, start_node)
-    n_mc_samples = 10_000
-    mc_samples = solver.compute_samples(n_mc_samples)
+    mc_samples = solver.compute_samples(number_runs_)
 
     # create sublists for each sample type that can be found
     samples_sublists = defaultdict(list)
@@ -115,14 +116,28 @@ def main():
     edge_labels = nx.get_edge_attributes(g, "weight")
     nx.draw_networkx_edge_labels(g, positioning, edge_labels, label_pos=0.8)  # shown later
 
-    # print all the samples' statistics
+    # print all the samples' statistics graphs
     for sample_type, sample in samples_sublists.items():
-        print_statistics(sample_type, sample)
-    mp.show()
+        print_graphs(sample_type, sample)
+        mp.savefig(json_file_name+"-"+sample_type+".png", dpi=180, format="PNG")
+    if not batch_mode_: mp.show()  # shows both the graphs and the network diagram
 
     # print out some metadata
+    print(f"{'='*100}\nStatistics for {json_file_name} ({number_runs_} runs)")
     for sample_name, sample in samples_sublists.items():
-        print_simple_stats(sample_name, sample)
+        print_simple_stats(sample_name, sample, number_runs_)
+
+
+def main():
+    # TODO: we might have to set requirements on input graphs topology (and automatically fix it later?)
+    # TODO: compute transition probability sensitivity
+    # TODO: improve logging to get a file log of all the results (+sample size per side-effect)
+    # TODO: make the non-zero feature for normal distributions an option
+    
+    directory = "Examples"
+    for filename in filter(lambda x: x.startswith("MultiOS"), os.listdir(directory)):
+        run_monte_carlo_analysis(os.path.join(directory, filename), 100_000, True)
+   
 
 if __name__ == '__main__':
     start_time = time.time_ns()

@@ -14,8 +14,9 @@
       "delay": {"three-points":  [120.0, 210.0, 390.0]}
     }},
     {"name": "4",  "layer": 3, "side_effects": {
-      "cost": {"three-points":  [8, 60, 300]},
-      "delay": {"three-points":  [4.0, 14.0, 80.0]}
+      "cost": {"three-points":  [8, 30, 200]},
+      "delay": {"three-points":  [4.0, 14.0, 80.0]},
+      "costFVI": {"three-points":  [0, 30, 100]}
     }},
     {"name": "5",   "layer": 3, "side_effects": {}}
   ],
